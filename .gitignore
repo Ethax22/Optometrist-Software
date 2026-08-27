@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local file storage (signatures, uploads) -- runtime data, not source
+/storage/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
