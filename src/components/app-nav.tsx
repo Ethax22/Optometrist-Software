@@ -61,7 +61,7 @@ export function AppNav({ email }: { email: string }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onSelect={() => logoutFormRef.current?.requestSubmit()}
+                onClick={() => logoutFormRef.current?.requestSubmit()}
               >
                 Logout
               </DropdownMenuItem>
