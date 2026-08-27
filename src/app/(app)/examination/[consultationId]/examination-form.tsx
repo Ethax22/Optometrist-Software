@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -78,6 +78,23 @@ export function ExaminationForm({
 
   const busy = savePending || pdfPending;
   const state = pdfState ?? saveState;
+
+  const triggeredForRef = useRef<ActionResult | null>(null);
+  useEffect(() => {
+    if (
+      pdfState &&
+      pdfState !== triggeredForRef.current &&
+      "success" in pdfState &&
+      pdfState.downloadPdf
+    ) {
+      triggeredForRef.current = pdfState;
+      // This is a file download (Content-Disposition: attachment), not a
+      // page navigation -- router.push() would try to client-render the
+      // response instead of letting the browser download it.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.href = `/api/prescriptions/${consultationId}/pdf`;
+    }
+  }, [pdfState, consultationId]);
 
   const onSave = handleSubmit((data) => {
     const parsed = prescriptionSchema.parse(data);
@@ -220,9 +237,7 @@ export function ExaminationForm({
       )}
       {state && "success" in state && !("error" in state) && (
         <p className="text-sm text-emerald-600" role="status">
-          {state.pdfPending
-            ? "Saved. PDF generation is coming in a later phase."
-            : "Examination saved."}
+          {state.downloadPdf ? "Saved. Downloading PDF..." : "Examination saved."}
         </p>
       )}
 

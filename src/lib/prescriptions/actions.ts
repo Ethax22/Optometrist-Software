@@ -6,7 +6,7 @@ import { prescriptions, consultations } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
 import { prescriptionSchema, type PrescriptionInput } from "@/lib/validation/prescription";
 
-export type ActionResult = { error: string } | { success: true; pdfPending?: boolean };
+export type ActionResult = { error: string } | { success: true; downloadPdf?: boolean };
 
 /** Postgres numeric() accepts a leading '+' or '-' directly, so sph/cyl/add
  * dropdown strings (e.g. "+2.25") pass straight through -- only axis
@@ -95,7 +95,8 @@ export async function saveAndGeneratePdfAction(
 
   await persistPrescription(consultationId, parsed.data);
 
-  // PDF rendering lands in a later phase -- the exam is saved, and this
-  // return shape is what that phase will replace with an actual file.
-  return { success: true, pdfPending: true };
+  // The actual PDF bytes come from GET /api/prescriptions/[id]/pdf --
+  // Server Actions return serializable data, not a file stream, so the
+  // client triggers that download itself once this reports success.
+  return { success: true, downloadPdf: true };
 }

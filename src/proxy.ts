@@ -32,7 +32,12 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Route Handlers under /api/** do their own auth via requireOptometrist()
+  // and return a proper response for their content type (JSON error, or in
+  // some cases just omitting the resource) -- redirecting them to the HTML
+  // /login page here would break non-page consumers like <img> and <a
+  // download> links (e.g. the signature and PDF endpoints).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/health|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

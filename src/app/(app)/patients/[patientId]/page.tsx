@@ -106,9 +106,19 @@ export default async function PatientPage({
                       >
                         View
                       </Button>
-                      <Button variant="outline" size="sm" disabled={!visit.hasPrescription}>
-                        Download
-                      </Button>
+                      {visit.hasPrescription ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          render={<a href={`/api/prescriptions/${visit.consultationId}/pdf`} />}
+                        >
+                          Download
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled>
+                          Download
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
