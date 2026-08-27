@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resetPasswordAction, type ActionResult } from "@/lib/auth/actions";
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ token }: { token: string }) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     resetPasswordAction,
     null,
@@ -14,6 +14,8 @@ export function ResetPasswordForm() {
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="token" value={token} />
+
       <div className="space-y-2">
         <Label htmlFor="password">New password</Label>
         <Input
