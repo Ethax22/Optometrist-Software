@@ -58,6 +58,7 @@ export function AppNav({ email }: { email: string }) {
               <DropdownMenuLabel>Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem render={<Link href="/profile" />}>Profile</DropdownMenuItem>
+              <DropdownMenuItem render={<Link href="/audit-log" />}>Audit Log</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"

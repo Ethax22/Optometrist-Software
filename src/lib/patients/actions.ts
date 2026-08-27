@@ -1,13 +1,23 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { patients, consultations } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
 import { patientSchema, type PatientInput } from "@/lib/validation/patient";
 import { logAudit } from "@/lib/audit/log";
 
-export type ActionResult = { error: string } | { success: true };
+export type ActionResult =
+  | { error: string; existingPatientId?: string }
+  | { success: true };
+
+/** Postgres error code for a unique-constraint violation. */
+const UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && err.code === UNIQUE_VIOLATION;
+}
 
 /**
  * Registers a brand-new patient and opens their first consultation.
@@ -28,29 +38,64 @@ export async function registerPatientAction(
 
   const { consultationDate, ...patientData } = parsed.data;
 
-  const created = await db.transaction(async (tx) => {
-    const [patient] = await tx
-      .insert(patients)
-      .values({
-        ...patientData,
-        createdBy: appUser.id,
-        updatedBy: appUser.id,
-      })
-      .returning({ id: patients.id });
+  const [existing] = await db
+    .select({ id: patients.id })
+    .from(patients)
+    .where(sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`)
+    .limit(1);
 
-    const [consultation] = await tx
-      .insert(consultations)
-      .values({
-        patientId: patient.id,
-        optometristId: appUser.id,
-        consultationDate,
-        createdBy: appUser.id,
-        updatedBy: appUser.id,
-      })
-      .returning({ id: consultations.id });
+  if (existing) {
+    return {
+      error:
+        "A patient with this UID / Emp Id already exists. Use Search to find them and start a new visit instead.",
+      existingPatientId: existing.id,
+    };
+  }
 
-    return { patientId: patient.id, consultationId: consultation.id };
-  });
+  let created: { patientId: string; consultationId: string };
+  try {
+    created = await db.transaction(async (tx) => {
+      const [patient] = await tx
+        .insert(patients)
+        .values({
+          ...patientData,
+          createdBy: appUser.id,
+          updatedBy: appUser.id,
+        })
+        .returning({ id: patients.id });
+
+      const [consultation] = await tx
+        .insert(consultations)
+        .values({
+          patientId: patient.id,
+          optometristId: appUser.id,
+          consultationDate,
+          createdBy: appUser.id,
+          updatedBy: appUser.id,
+        })
+        .returning({ id: consultations.id });
+
+      return { patientId: patient.id, consultationId: consultation.id };
+    });
+  } catch (err) {
+    // Fallback for the rare race where two submissions for the same UID
+    // land concurrently and both pass the check above -- the DB's unique
+    // index is the actual guarantee, this just turns it into the same
+    // friendly message instead of a raw constraint-violation error.
+    if (isUniqueViolation(err)) {
+      const [race] = await db
+        .select({ id: patients.id })
+        .from(patients)
+        .where(sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`)
+        .limit(1);
+      return {
+        error:
+          "A patient with this UID / Emp Id already exists. Use Search to find them and start a new visit instead.",
+        existingPatientId: race?.id,
+      };
+    }
+    throw err;
+  }
 
   await logAudit({
     userId: appUser.id,

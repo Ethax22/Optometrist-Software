@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -141,6 +142,15 @@ export function RegisterForm() {
           {state && "error" in state && (
             <p className="text-sm text-destructive" role="alert">
               {state.error}
+              {state.existingPatientId && (
+                <>
+                  {" "}
+                  <Link href={`/patients/${state.existingPatientId}`} className="underline">
+                    Go to existing patient
+                  </Link>
+                  .
+                </>
+              )}
             </p>
           )}
 
