@@ -53,3 +53,32 @@ export async function registerPatientAction(
 
   redirect(`/examination/${consultationId}`);
 }
+
+/**
+ * Opens a new consultation for a patient who already exists -- the
+ * counterpart to registerPatientAction, reached from the patient's page
+ * (Search -> existing patient -> New Visit) rather than Registration.
+ */
+export async function startNewVisitAction(
+  _prev: ActionResult | null,
+  input: { patientId: string; consultationDate: string },
+): Promise<ActionResult> {
+  const { appUser } = await requireOptometrist();
+
+  if (!input.consultationDate) {
+    return { error: "Consultation date is required" };
+  }
+
+  const [consultation] = await db
+    .insert(consultations)
+    .values({
+      patientId: input.patientId,
+      optometristId: appUser.id,
+      consultationDate: input.consultationDate,
+      createdBy: appUser.id,
+      updatedBy: appUser.id,
+    })
+    .returning({ id: consultations.id });
+
+  redirect(`/examination/${consultation.id}`);
+}
