@@ -2,6 +2,7 @@ import Link from "next/link";
 import { or, ilike, count } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { patients } from "@/lib/db/schema";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,11 +22,16 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const { q, page: pageParam } = await searchParams;
-  const query = q?.trim() ?? "";
+  const query = (q?.trim() ?? "").slice(0, 200);
   const page = Math.max(1, Number(pageParam) || 1);
   const offset = (page - 1) * PAGE_SIZE;
 
-  const whereClause = query
+  const ip = await getClientIp();
+  const rateLimit = query ? checkRateLimit(`search:${ip}`, 60, 60 * 1000) : { allowed: true };
+
+  const shouldQuery = Boolean(query) && rateLimit.allowed;
+
+  const whereClause = shouldQuery
     ? or(
         ilike(patients.name, `%${query}%`),
         ilike(patients.uidEmpId, `%${query}%`),
@@ -34,7 +40,7 @@ export default async function SearchPage({
     : undefined;
 
   const [results, [{ total }]] = await Promise.all([
-    query
+    shouldQuery
       ? db
           .select({
             id: patients.id,
@@ -50,7 +56,7 @@ export default async function SearchPage({
           .limit(PAGE_SIZE)
           .offset(offset)
       : Promise.resolve([]),
-    query
+    shouldQuery
       ? db.select({ total: count() }).from(patients).where(whereClause)
       : Promise.resolve([{ total: 0 }]),
   ]);
@@ -74,7 +80,13 @@ export default async function SearchPage({
         <Button type="submit">Search</Button>
       </form>
 
-      {query && (
+      {query && !rateLimit.allowed && (
+        <p className="text-sm text-destructive">
+          Too many searches. Please wait a moment and try again.
+        </p>
+      )}
+
+      {shouldQuery && (
         <>
           <Table>
             <TableHeader>

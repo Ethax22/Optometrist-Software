@@ -8,11 +8,22 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v ? v : undefined));
 
+const PHONE_PATTERN = /^[0-9+\-\s()]{7,30}$/;
+const optionalPhone = () =>
+  z
+    .string()
+    .trim()
+    .max(30)
+    .regex(PHONE_PATTERN, "Enter a valid phone number")
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined));
+
 export const profileSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required").max(200),
   qualification: optionalText(200),
   registrationNumber: optionalText(100),
-  phone: optionalText(30),
+  phone: optionalPhone(),
   email: z
     .string()
     .trim()

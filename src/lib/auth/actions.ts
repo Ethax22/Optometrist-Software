@@ -13,6 +13,7 @@ import {
   resetPasswordSchema,
 } from "@/lib/validation/auth";
 import { logAudit } from "@/lib/audit/log";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 export type ActionResult = { error: string } | { success: true };
 
@@ -29,6 +30,16 @@ export async function loginAction(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const ip = await getClientIp();
+  const rateLimit = checkRateLimit(
+    `login:${ip}:${parsed.data.email.toLowerCase()}`,
+    10,
+    15 * 60 * 1000,
+  );
+  if (!rateLimit.allowed) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
   }
 
   const [user] = await db
@@ -69,6 +80,14 @@ export async function forgotPasswordAction(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const ip = await getClientIp();
+  const rateLimit = checkRateLimit(`forgot-password:${ip}`, 5, 60 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    // Same generic response as success -- don't reveal that a limit exists
+    // or how it's keyed.
+    return { success: true };
   }
 
   const [user] = await db
@@ -122,6 +141,12 @@ export async function resetPasswordAction(
   const token = formData.get("token");
   if (typeof token !== "string" || !token) {
     return { error: "Your reset link is invalid. Please request a new one." };
+  }
+
+  const ip = await getClientIp();
+  const rateLimit = checkRateLimit(`reset-password:${ip}`, 10, 60 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    return { error: "Too many attempts. Please wait and try again." };
   }
 
   const tokenHash = hashToken(token);

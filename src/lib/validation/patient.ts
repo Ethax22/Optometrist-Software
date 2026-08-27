@@ -11,6 +11,17 @@ const optionalText = (max: number) =>
     .or(z.literal(""))
     .transform((v) => (v ? v : undefined));
 
+const MOBILE_PATTERN = /^[0-9+\-\s()]{7,20}$/;
+const optionalMobile = () =>
+  z
+    .string()
+    .trim()
+    .max(20)
+    .regex(MOBILE_PATTERN, "Enter a valid mobile number")
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined));
+
 export const patientSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
   uidEmpId: z.string().trim().min(1, "UID / Emp Id is required").max(100),
@@ -20,7 +31,7 @@ export const patientSchema = z.object({
     .min(1, "Age must be at least 1")
     .max(149, "Age must be under 150"),
   gender: z.enum(genderOptions, { message: "Select a gender" }),
-  mobile: optionalText(20),
+  mobile: optionalMobile(),
   email: z
     .string()
     .trim()
