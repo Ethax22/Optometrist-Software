@@ -30,16 +30,23 @@ export async function createSession(userId: string): Promise<void> {
   });
 }
 
-/** Deletes the current session (if any) both from the DB and the cookie. */
-export async function destroySession(): Promise<void> {
+/** Deletes the current session (if any) both from the DB and the cookie.
+ * Returns the user id that was signed out, or null if there was no session. */
+export async function destroySession(): Promise<string | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
+  let userId: string | null = null;
   if (token) {
-    await db.delete(sessions).where(eq(sessions.id, hashToken(token)));
+    const [deleted] = await db
+      .delete(sessions)
+      .where(eq(sessions.id, hashToken(token)))
+      .returning({ userId: sessions.userId });
+    userId = deleted?.userId ?? null;
   }
 
   cookieStore.delete(SESSION_COOKIE_NAME);
+  return userId;
 }
 
 /** Deletes every session for a user -- used after a password reset. */

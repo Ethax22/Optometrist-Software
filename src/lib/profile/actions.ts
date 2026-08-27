@@ -11,6 +11,7 @@ import {
   MAX_SIGNATURE_SIZE_BYTES,
 } from "@/lib/validation/profile";
 import { saveSignature, deleteSignature } from "@/lib/storage/signatures";
+import { logAudit } from "@/lib/audit/log";
 
 export type ActionResult = { error: string } | { success: true };
 
@@ -44,6 +45,13 @@ export async function updateProfileAction(
       target: optometristProfiles.userId,
       set: { ...parsed.data, updatedAt: new Date() },
     });
+
+  await logAudit({
+    userId: appUser.id,
+    action: "profile_updated",
+    entityType: "optometrist_profile",
+    entityId: appUser.id,
+  });
 
   revalidatePath("/profile");
   return { success: true };
@@ -92,6 +100,13 @@ export async function uploadSignatureAction(
     await deleteSignature(existing.signatureStoragePath);
   }
 
+  await logAudit({
+    userId: appUser.id,
+    action: "signature_uploaded",
+    entityType: "optometrist_profile",
+    entityId: appUser.id,
+  });
+
   revalidatePath("/profile");
   return { success: true };
 }
@@ -111,6 +126,13 @@ export async function removeSignatureAction(): Promise<ActionResult> {
       .update(optometristProfiles)
       .set({ signatureStoragePath: null, updatedAt: new Date() })
       .where(eq(optometristProfiles.userId, appUser.id));
+
+    await logAudit({
+      userId: appUser.id,
+      action: "signature_removed",
+      entityType: "optometrist_profile",
+      entityId: appUser.id,
+    });
   }
 
   revalidatePath("/profile");

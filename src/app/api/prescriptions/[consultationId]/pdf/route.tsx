@@ -6,6 +6,7 @@ import { consultations, patients, prescriptions, optometristProfiles, users } fr
 import { requireOptometrist } from "@/lib/auth/session";
 import { readSignature } from "@/lib/storage/signatures";
 import { PrescriptionDocument } from "@/lib/pdf/prescription-document";
+import { logAudit } from "@/lib/audit/log";
 
 // react-pdf uses Node built-ins (fs, zlib) internally -- must not run on Edge.
 export const runtime = "nodejs";
@@ -14,7 +15,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ consultationId: string }> },
 ) {
-  await requireOptometrist();
+  const { appUser } = await requireOptometrist();
 
   const { consultationId } = await params;
 
@@ -90,6 +91,14 @@ export async function GET(
       }}
     />,
   );
+
+  await logAudit({
+    userId: appUser.id,
+    action: "prescription_pdf_downloaded",
+    entityType: "consultation",
+    entityId: consultationId,
+    metadata: { examOptometristId: row.optometristId },
+  });
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

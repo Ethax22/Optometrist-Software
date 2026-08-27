@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { prescriptions, consultations } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
 import { prescriptionSchema, type PrescriptionInput } from "@/lib/validation/prescription";
+import { logAudit } from "@/lib/audit/log";
 
 export type ActionResult = { error: string } | { success: true; downloadPdf?: boolean };
 
@@ -23,7 +24,7 @@ function toTextOrNull(value?: string): string | null {
   return value === undefined || value === "" ? null : value;
 }
 
-async function persistPrescription(consultationId: string, data: PrescriptionInput) {
+async function persistPrescription(consultationId: string, data: PrescriptionInput, userId: string) {
   const [row] = await db
     .select({ id: consultations.id })
     .from(consultations)
@@ -63,13 +64,20 @@ async function persistPrescription(consultationId: string, data: PrescriptionInp
     .insert(prescriptions)
     .values(values)
     .onConflictDoUpdate({ target: prescriptions.consultationId, set: values });
+
+  await logAudit({
+    userId,
+    action: "prescription_saved",
+    entityType: "prescription",
+    entityId: consultationId,
+  });
 }
 
 export async function saveExaminationAction(
   _prev: ActionResult | null,
   input: { consultationId: string } & PrescriptionInput,
 ): Promise<ActionResult> {
-  await requireOptometrist();
+  const { appUser } = await requireOptometrist();
 
   const { consultationId, ...rest } = input;
   const parsed = prescriptionSchema.safeParse(rest);
@@ -77,7 +85,7 @@ export async function saveExaminationAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  await persistPrescription(consultationId, parsed.data);
+  await persistPrescription(consultationId, parsed.data, appUser.id);
   return { success: true };
 }
 
@@ -85,7 +93,7 @@ export async function saveAndGeneratePdfAction(
   _prev: ActionResult | null,
   input: { consultationId: string } & PrescriptionInput,
 ): Promise<ActionResult> {
-  await requireOptometrist();
+  const { appUser } = await requireOptometrist();
 
   const { consultationId, ...rest } = input;
   const parsed = prescriptionSchema.safeParse(rest);
@@ -93,7 +101,7 @@ export async function saveAndGeneratePdfAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  await persistPrescription(consultationId, parsed.data);
+  await persistPrescription(consultationId, parsed.data, appUser.id);
 
   // The actual PDF bytes come from GET /api/prescriptions/[id]/pdf --
   // Server Actions return serializable data, not a file stream, so the

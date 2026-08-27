@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { patients, consultations } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
 import { patientSchema, type PatientInput } from "@/lib/validation/patient";
+import { logAudit } from "@/lib/audit/log";
 
 export type ActionResult = { error: string } | { success: true };
 
@@ -27,7 +28,7 @@ export async function registerPatientAction(
 
   const { consultationDate, ...patientData } = parsed.data;
 
-  const consultationId = await db.transaction(async (tx) => {
+  const created = await db.transaction(async (tx) => {
     const [patient] = await tx
       .insert(patients)
       .values({
@@ -48,10 +49,24 @@ export async function registerPatientAction(
       })
       .returning({ id: consultations.id });
 
-    return consultation.id;
+    return { patientId: patient.id, consultationId: consultation.id };
   });
 
-  redirect(`/examination/${consultationId}`);
+  await logAudit({
+    userId: appUser.id,
+    action: "patient_registered",
+    entityType: "patient",
+    entityId: created.patientId,
+  });
+  await logAudit({
+    userId: appUser.id,
+    action: "consultation_created",
+    entityType: "consultation",
+    entityId: created.consultationId,
+    metadata: { patientId: created.patientId },
+  });
+
+  redirect(`/examination/${created.consultationId}`);
 }
 
 /**
@@ -79,6 +94,14 @@ export async function startNewVisitAction(
       updatedBy: appUser.id,
     })
     .returning({ id: consultations.id });
+
+  await logAudit({
+    userId: appUser.id,
+    action: "consultation_created",
+    entityType: "consultation",
+    entityId: consultation.id,
+    metadata: { patientId: input.patientId },
+  });
 
   redirect(`/examination/${consultation.id}`);
 }

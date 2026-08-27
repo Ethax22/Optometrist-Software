@@ -12,6 +12,7 @@ import {
   loginSchema,
   resetPasswordSchema,
 } from "@/lib/validation/auth";
+import { logAudit } from "@/lib/audit/log";
 
 export type ActionResult = { error: string } | { success: true };
 
@@ -46,13 +47,17 @@ export async function loginAction(
   }
 
   await createSession(user.id);
+  await logAudit({ userId: user.id, action: "login", entityType: "user", entityId: user.id });
 
   const next = formData.get("next");
   redirect(typeof next === "string" && next.startsWith("/") ? next : "/home");
 }
 
 export async function logoutAction() {
-  await destroySession();
+  const userId = await destroySession();
+  if (userId) {
+    await logAudit({ userId, action: "logout", entityType: "user", entityId: userId });
+  }
   redirect("/login");
 }
 
@@ -89,6 +94,13 @@ export async function forgotPasswordAction(
     // using this instance, so the reset link is handed over directly
     // (printed here for whoever has server access to relay it).
     console.log(`[password reset] ${user.email}: ${resetUrl}`);
+
+    await logAudit({
+      userId: user.id,
+      action: "password_reset_requested",
+      entityType: "user",
+      entityId: user.id,
+    });
   }
 
   return { success: true };
@@ -143,6 +155,12 @@ export async function resetPasswordAction(
   });
 
   await destroyAllUserSessions(resetToken.userId);
+  await logAudit({
+    userId: resetToken.userId,
+    action: "password_reset_completed",
+    entityType: "user",
+    entityId: resetToken.userId,
+  });
 
   redirect("/login");
 }
