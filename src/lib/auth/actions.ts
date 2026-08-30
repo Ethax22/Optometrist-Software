@@ -14,6 +14,7 @@ import {
 } from "@/lib/validation/auth";
 import { logAudit } from "@/lib/audit/log";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { sendPasswordResetEmail } from "@/lib/email/resend";
 
 export type ActionResult = { error: string } | { success: true };
 
@@ -109,10 +110,7 @@ export async function forgotPasswordAction(
     const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
     const resetUrl = `${origin}/reset-password?token=${token}`;
 
-    // No email provider is configured -- there are only two optometrists
-    // using this instance, so the reset link is handed over directly
-    // (printed here for whoever has server access to relay it).
-    console.log(`[password reset] ${user.email}: ${resetUrl}`);
+    await sendPasswordResetEmail(user.email, resetUrl);
 
     await logAudit({
       userId: user.id,
