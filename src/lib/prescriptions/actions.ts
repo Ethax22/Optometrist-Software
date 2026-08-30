@@ -56,6 +56,7 @@ async function persistPrescription(consultationId: string, data: PrescriptionInp
     pinholeRight: toTextOrNull(data.pinholeRight),
     pinholeLeft: toTextOrNull(data.pinholeLeft),
     colorBlindnessResult: toTextOrNull(data.colorBlindnessResult),
+    optometristRemarks: toTextOrNull(data.optometristRemarks),
     remarks: toTextOrNull(data.remarks),
     updatedAt: new Date(),
   };

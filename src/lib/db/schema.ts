@@ -167,6 +167,7 @@ export const prescriptions = pgTable("prescriptions", {
 
   colorBlindnessResult: text("color_blindness_result"),
 
+  optometristRemarks: text("optometrist_remarks"),
   remarks: text("remarks"),
 
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

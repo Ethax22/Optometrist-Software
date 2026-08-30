@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { colorBlindnessOptions } from "@/lib/constants/clinical";
+import { colorBlindnessOptions, optometristRemarksOptions } from "@/lib/constants/clinical";
 
 const optionalDropdown = () =>
   z
@@ -40,6 +40,12 @@ export const prescriptionSchema = z.object({
   pinholeLeft: optionalDropdown(),
 
   colorBlindnessResult: z.enum(colorBlindnessOptions).optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
+
+  optometristRemarks: z
+    .enum(optometristRemarksOptions)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined)),
 
   remarks: z
     .string()

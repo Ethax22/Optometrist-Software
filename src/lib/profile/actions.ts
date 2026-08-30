@@ -11,6 +11,7 @@ import {
   MAX_SIGNATURE_SIZE_BYTES,
 } from "@/lib/validation/profile";
 import { saveSignature, deleteSignature } from "@/lib/storage/signatures";
+import { makeSignatureTransparent } from "@/lib/storage/signature-image";
 import { logAudit } from "@/lib/audit/log";
 
 export type ActionResult = { error: string } | { success: true };
@@ -83,7 +84,17 @@ export async function uploadSignatureAction(
     .limit(1);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const storagePath = await saveSignature(appUser.id, buffer, file.type);
+
+  // Strip the paper background and crop to the ink, so the PDF shows the
+  // signature itself rather than a white rectangle.
+  let processed;
+  try {
+    processed = await makeSignatureTransparent(buffer);
+  } catch {
+    return { error: "That image could not be processed. Try a different file." };
+  }
+
+  const storagePath = await saveSignature(appUser.id, processed.data, processed.mimeType);
 
   // fullName is NOT NULL; fall back to the account email until the
   // optometrist fills in the profile form (a signature can be uploaded

@@ -18,6 +18,7 @@ import {
   nearVisualAcuityOptions,
   pinholeOptions,
   colorBlindnessOptions,
+  optometristRemarksOptions,
   formatSignedPower,
 } from "@/lib/constants/clinical";
 import { prescriptionSchema, type PrescriptionInput } from "@/lib/validation/prescription";
@@ -51,6 +52,7 @@ function defaultsFromPrescription(p: Prescription | null): PrescriptionInput {
     pinholeRight: p?.pinholeRight ?? undefined,
     pinholeLeft: p?.pinholeLeft ?? undefined,
     colorBlindnessResult: (p?.colorBlindnessResult as PrescriptionInput["colorBlindnessResult"]) ?? undefined,
+    optometristRemarks: (p?.optometristRemarks as PrescriptionInput["optometristRemarks"]) ?? undefined,
     remarks: p?.remarks ?? undefined,
   };
 }
@@ -224,9 +226,19 @@ export function ExaminationForm({
         <CardHeader>
           <CardTitle>Remarks</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1.5">
-          <Label htmlFor="remarks">Remarks / Observations / Findings</Label>
-          <Textarea id="remarks" rows={4} {...register("remarks")} />
+        <CardContent className="space-y-4">
+          <ControlledSelect
+            control={control}
+            name="optometristRemarks"
+            label="Optometrist Remarks"
+            options={optometristRemarksOptions}
+            placeholder="Select Optometrist Remarks"
+          />
+
+          <div className="space-y-1.5">
+            <Label htmlFor="remarks">Remarks / Observations / Findings</Label>
+            <Textarea id="remarks" rows={4} {...register("remarks")} />
+          </div>
         </CardContent>
       </Card>
 

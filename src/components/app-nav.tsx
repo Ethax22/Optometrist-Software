@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
@@ -28,7 +29,18 @@ export function AppNav({ email }: { email: string }) {
 
   return (
     <header className="border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+        <Link href="/home" className="flex shrink-0 items-center">
+          <Image
+            src="/axiz-logo.png"
+            alt="AXIZ Vision Care"
+            width={220}
+            height={101}
+            className="h-9 w-auto"
+            priority
+          />
+        </Link>
+
         <nav className="flex items-center gap-1">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);

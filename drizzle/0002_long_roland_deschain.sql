@@ -1,0 +1,1 @@
+ALTER TABLE "prescriptions" ADD COLUMN "optometrist_remarks" text;

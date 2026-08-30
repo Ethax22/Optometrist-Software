@@ -76,3 +76,17 @@ export const nearVisualAcuityOptions = [
 
 /** Only an overall result is captured -- no per-eye RE/LE breakdown. */
 export const colorBlindnessOptions = ["Normal", "Abnormal"] as const;
+
+/** Standard optometrist remarks, shown as a dropdown above the free-text remarks box. */
+export const optometristRemarksOptions = [
+  "Both Eyes: Normal Vision. Review after 6 months or 1 year",
+  "Advised to use glasses and consult ophthalmologist for cyclo refraction / dilated retina examination",
+  "Advised to use glasses for distance and near. Next visit after 6 months to 1 year",
+  "Advised to use glasses for Near only",
+  "Advised to use glasses for distance only",
+  "Advised to use Protective glasses",
+  "Advised to consult ophthalmologist for cataract surgery",
+  "Advised to continue using same glasses and check up after 6 months to 1 year",
+  "Advised to consult ophthalmologist for medical treatment",
+  "Vision is not improving advised to consult ophthalmologist for further opinion",
+] as const;

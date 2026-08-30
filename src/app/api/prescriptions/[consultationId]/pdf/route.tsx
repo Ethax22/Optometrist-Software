@@ -87,6 +87,7 @@ export async function GET(
         pinholeRight: row.prescription.pinholeRight,
         pinholeLeft: row.prescription.pinholeLeft,
         colorBlindnessResult: row.prescription.colorBlindnessResult,
+        optometristRemarks: row.prescription.optometristRemarks,
         remarks: row.prescription.remarks,
       }}
     />,

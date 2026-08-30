@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Optometrist Prescription Manager",
+  title: "AXIZ Vision Care",
   description: "Secure prescription management for authorized optometrists.",
 };
 

@@ -6,7 +6,7 @@ import { Resend } from "resend";
 // Resend account itself was signed up with, until a real domain is
 // verified. Swap FROM_ADDRESS once a domain is added, nothing else here
 // needs to change.
-const FROM_ADDRESS = "Optometrist App <onboarding@resend.dev>";
+const FROM_ADDRESS = "AXIZ Vision Care <onboarding@resend.dev>";
 
 /**
  * Sends the password reset link by email. Falls back to logging the link
