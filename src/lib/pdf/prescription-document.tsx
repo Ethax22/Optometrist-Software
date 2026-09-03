@@ -23,7 +23,7 @@ const LOGO_DATA_URI = `data:image/png;base64,${readFileSync(
 
 export interface PrescriptionPdfData {
   patientName: string;
-  patientUid: string;
+  patientUid: string | null;
   patientAge: number;
   patientGender: string;
   consultationDate: string;
@@ -203,14 +203,22 @@ function RefractionTable({
   );
 }
 
-export function PrescriptionDocument({ data }: { data: PrescriptionPdfData }) {
+export function PrescriptionDocument({
+  data,
+  includeLogo = true,
+}: {
+  data: PrescriptionPdfData;
+  includeLogo?: boolean;
+}) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.frame}>
           <View style={styles.letterhead}>
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop */}
-            <Image src={LOGO_DATA_URI} style={styles.letterheadLogo} />
+            {includeLogo && (
+              // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop
+              <Image src={LOGO_DATA_URI} style={styles.letterheadLogo} />
+            )}
           </View>
 
           <View style={styles.headerRow}>
@@ -221,7 +229,7 @@ export function PrescriptionDocument({ data }: { data: PrescriptionPdfData }) {
               </View>
               <View style={styles.headerLine}>
                 <Text style={styles.headerLabel}>UID / Emp Id</Text>
-                <Text>: {data.patientUid}</Text>
+                <Text>: {data.patientUid ?? "-"}</Text>
               </View>
             </View>
             <View>

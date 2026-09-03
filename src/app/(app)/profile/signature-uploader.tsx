@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -25,6 +25,9 @@ export function SignatureUploader({
     null,
   );
   const [cacheBust, setCacheBust] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   return (
     <Card>
@@ -44,20 +47,44 @@ export function SignatureUploader({
         )}
 
         <form
+          ref={formRef}
           action={(formData) => {
             uploadFormAction(formData);
             setCacheBust((v) => v + 1);
+            setSelectedFileName(null);
           }}
           className="flex flex-wrap items-center gap-3"
         >
           <input
+            ref={fileInputRef}
             type="file"
             name="signature"
             accept="image/png,image/jpeg,image/webp"
             required
-            className="text-sm"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setSelectedFileName(file.name);
+                formRef.current?.requestSubmit();
+              }
+            }}
           />
-          <Button type="submit" size="sm" disabled={uploadPending}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadPending}
+          >
+            {selectedFileName ?? "Choose Image"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadPending}
+          >
             {uploadPending ? "Uploading..." : hasSignature ? "Replace" : "Upload"}
           </Button>
         </form>

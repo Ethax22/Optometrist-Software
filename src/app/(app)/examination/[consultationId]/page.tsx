@@ -39,7 +39,7 @@ export default async function ExaminationPage({
       <div>
         <h1 className="text-2xl font-semibold">Examination</h1>
         <p className="text-muted-foreground">
-          {row.patientName} &middot; UID {row.patientUid} &middot; {row.patientAge} /{" "}
+          {row.patientName} &middot; UID {row.patientUid ?? "-"} &middot; {row.patientAge} /{" "}
           {row.patientGender} &middot; {row.consultationDate}
         </p>
       </div>

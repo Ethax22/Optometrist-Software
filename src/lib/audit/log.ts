@@ -19,7 +19,9 @@ export type AuditAction =
   | "patient_registered"
   | "consultation_created"
   | "prescription_saved"
-  | "prescription_pdf_downloaded";
+  | "prescription_pdf_downloaded"
+  | "prescriptions_csv_exported"
+  | "prescriptions_bulk_pdf_downloaded";
 
 export type AuditEntityType =
   | "user"

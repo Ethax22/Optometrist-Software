@@ -1,0 +1,1 @@
+ALTER TABLE "patients" ALTER COLUMN "uid_emp_id" DROP NOT NULL;

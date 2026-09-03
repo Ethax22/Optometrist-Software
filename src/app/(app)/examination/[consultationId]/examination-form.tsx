@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -82,6 +82,10 @@ export function ExaminationForm({
   const state = pdfState ?? saveState;
 
   const triggeredForRef = useRef<ActionResult | null>(null);
+  // Which button triggered pdfAction -- read by the effect below once the
+  // save succeeds, since the server action itself only reports success/
+  // failure and doesn't carry the logo choice back with it.
+  const [logoChoice, setLogoChoice] = useState<"with" | "without">("with");
   useEffect(() => {
     if (
       pdfState &&
@@ -90,21 +94,29 @@ export function ExaminationForm({
       pdfState.downloadPdf
     ) {
       triggeredForRef.current = pdfState;
+      const logoParam = logoChoice === "without" ? "?logo=false" : "";
       // This is a file download (Content-Disposition: attachment), not a
       // page navigation -- router.push() would try to client-render the
       // response instead of letting the browser download it.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.href = `/api/prescriptions/${consultationId}/pdf`;
+      window.location.href = `/api/prescriptions/${consultationId}/pdf${logoParam}`;
     }
-  }, [pdfState, consultationId]);
+  }, [pdfState, consultationId, logoChoice]);
 
   const onSave = handleSubmit((data) => {
     const parsed = prescriptionSchema.parse(data);
     saveAction({ consultationId, ...parsed });
   });
 
-  const onSaveAndGeneratePdf = handleSubmit((data) => {
+  const onSaveAndGeneratePdfWithLogo = handleSubmit((data) => {
     const parsed = prescriptionSchema.parse(data);
+    setLogoChoice("with");
+    pdfAction({ consultationId, ...parsed });
+  });
+
+  const onSaveAndGeneratePdfNoLogo = handleSubmit((data) => {
+    const parsed = prescriptionSchema.parse(data);
+    setLogoChoice("without");
     pdfAction({ consultationId, ...parsed });
   });
 
@@ -253,12 +265,15 @@ export function ExaminationForm({
         </p>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Button type="button" variant="outline" disabled={busy} onClick={onSave}>
           {savePending ? "Saving..." : "Save"}
         </Button>
-        <Button type="button" disabled={busy} onClick={onSaveAndGeneratePdf}>
-          {pdfPending ? "Saving..." : "Save & Generate PDF"}
+        <Button type="button" disabled={busy} onClick={onSaveAndGeneratePdfWithLogo}>
+          {pdfPending ? "Saving..." : "Save & Generate PDF (Logo)"}
+        </Button>
+        <Button type="button" variant="outline" disabled={busy} onClick={onSaveAndGeneratePdfNoLogo}>
+          {pdfPending ? "Saving..." : "Save & Generate PDF (No Logo)"}
         </Button>
       </div>
     </form>

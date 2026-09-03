@@ -24,7 +24,7 @@ const optionalMobile = () =>
 
 export const patientSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
-  uidEmpId: z.string().trim().min(1, "UID / Emp Id is required").max(100),
+  uidEmpId: optionalText(100),
   age: z.coerce
     .number({ message: "Age is required" })
     .int("Age must be a whole number")

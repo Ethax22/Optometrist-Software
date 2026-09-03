@@ -12,17 +12,22 @@ import {
 } from "./clinical";
 
 describe("sphereOptions", () => {
-  it("spans -20.00 to +20.00 in 0.25 steps", () => {
-    expect(sphereOptions[0]).toBe("-20.00");
+  it("orders -0.25 down to -20.00, then 0.00, then +0.25 up to +20.00", () => {
+    expect(sphereOptions[0]).toBe("-0.25");
+    expect(sphereOptions[79]).toBe("-20.00");
+    expect(sphereOptions[80]).toBe("+0.00");
+    expect(sphereOptions[81]).toBe("+0.25");
     expect(sphereOptions.at(-1)).toBe("+20.00");
-    expect(sphereOptions).toContain("+0.00");
-    expect(sphereOptions.length).toBe(161); // (20 - -20) / 0.25 + 1
+    expect(sphereOptions.length).toBe(161); // 80 negatives + zero + 80 positives
   });
 });
 
 describe("cylinderOptions", () => {
-  it("spans -5.00 to +5.00 in 0.25 steps", () => {
-    expect(cylinderOptions[0]).toBe("-5.00");
+  it("orders -0.25 down to -5.00, then 0.00, then +0.25 up to +5.00", () => {
+    expect(cylinderOptions[0]).toBe("-0.25");
+    expect(cylinderOptions[19]).toBe("-5.00");
+    expect(cylinderOptions[20]).toBe("+0.00");
+    expect(cylinderOptions[21]).toBe("+0.25");
     expect(cylinderOptions.at(-1)).toBe("+5.00");
     expect(cylinderOptions.length).toBe(41);
   });

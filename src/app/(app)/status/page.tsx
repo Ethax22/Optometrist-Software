@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
 import { format } from "date-fns";
 import { db } from "@/lib/db/client";
@@ -6,19 +5,12 @@ import { consultations, patients, prescriptions } from "@/lib/db/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   parseStatusRange,
   resolveStatusRange,
   statusRangeLabel,
 } from "@/lib/status/date-range";
 import { StatusDateNav } from "./status-date-nav";
+import { StatusResultsTable } from "./status-results-table";
 
 function prettyDate(date: string) {
   return format(new Date(`${date}T00:00:00`), "PPP");
@@ -43,6 +35,7 @@ export default async function StatusPage({
       consultationId: consultations.id,
       consultationDate: consultations.consultationDate,
       createdAt: consultations.createdAt,
+      patientId: patients.id,
       patientName: patients.name,
       patientUid: patients.uidEmpId,
       hasPrescription: prescriptions.id,
@@ -82,7 +75,12 @@ export default async function StatusPage({
             {visits.length} patient{visits.length === 1 ? "" : "s"} {periodDescription}
           </p>
         </div>
-        <StatusDateNav date={date} range={range} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" render={<a href="/api/prescriptions/export/csv" />}>
+            Export All Prescriptions (CSV)
+          </Button>
+          <StatusDateNav date={date} range={range} />
+        </div>
       </div>
 
       <Card>
@@ -90,48 +88,18 @@ export default async function StatusPage({
           <CardTitle>{isSingleDay ? "Daily Patient List" : `Patient List — ${statusRangeLabel(range)}`}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {!isSingleDay && <TableHead>Date</TableHead>}
-                <TableHead>Time</TableHead>
-                <TableHead>Patient Name</TableHead>
-                <TableHead>UID</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visits.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isSingleDay ? 5 : 6} className="text-center text-muted-foreground">
-                    {isSingleDay ? "No patients on this date." : "No patients in this period."}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                visits.map((visit) => (
-                  <TableRow key={visit.consultationId}>
-                    {!isSingleDay && (
-                      <TableCell>{format(new Date(`${visit.consultationDate}T00:00:00`), "PP")}</TableCell>
-                    )}
-                    <TableCell>{format(visit.createdAt, "p")}</TableCell>
-                    <TableCell>{visit.patientName}</TableCell>
-                    <TableCell>{visit.patientUid}</TableCell>
-                    <TableCell>{visit.hasPrescription ? "Saved" : "Draft"}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={<Link href={`/examination/${visit.consultationId}`} />}
-                      >
-                        View / Edit
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <StatusResultsTable
+            showDateColumn={!isSingleDay}
+            visits={visits.map((visit) => ({
+              consultationId: visit.consultationId,
+              consultationDate: format(new Date(`${visit.consultationDate}T00:00:00`), "PP"),
+              time: format(visit.createdAt, "p"),
+              patientId: visit.patientId,
+              patientName: visit.patientName,
+              patientUid: visit.patientUid,
+              hasPrescription: Boolean(visit.hasPrescription),
+            }))}
+          />
         </CardContent>
       </Card>
     </div>

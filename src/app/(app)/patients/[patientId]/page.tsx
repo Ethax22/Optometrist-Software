@@ -46,7 +46,7 @@ export default async function PatientPage({
         </CardHeader>
         <CardContent className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
           <p>
-            <span className="text-muted-foreground">UID / Emp Id:</span> {patient.uidEmpId}
+            <span className="text-muted-foreground">UID / Emp Id:</span> {patient.uidEmpId ?? "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Age / Gender:</span> {patient.age} /{" "}
@@ -107,13 +107,24 @@ export default async function PatientPage({
                         View
                       </Button>
                       {visit.hasPrescription ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          render={<a href={`/api/prescriptions/${visit.consultationId}/pdf`} />}
-                        >
-                          Download
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            render={<a href={`/api/prescriptions/${visit.consultationId}/pdf`} />}
+                          >
+                            Download (Logo)
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            render={
+                              <a href={`/api/prescriptions/${visit.consultationId}/pdf?logo=false`} />
+                            }
+                          >
+                            Download (No Logo)
+                          </Button>
+                        </>
                       ) : (
                         <Button variant="outline" size="sm" disabled>
                           Download

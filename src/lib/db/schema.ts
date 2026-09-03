@@ -81,7 +81,7 @@ export const patients = pgTable(
   "patients",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    uidEmpId: text("uid_emp_id").notNull(),
+    uidEmpId: text("uid_emp_id"),
     name: text("name").notNull(),
     age: integer("age").notNull(),
     gender: text("gender").notNull(),

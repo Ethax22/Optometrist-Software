@@ -21,12 +21,14 @@ describe("patientSchema", () => {
   it("accepts optional fields left blank", () => {
     const result = patientSchema.safeParse({
       ...validInput,
+      uidEmpId: "",
       mobile: "",
       email: "",
       address: "",
     });
     expect(result.success).toBe(true);
     if (result.success) {
+      expect(result.data.uidEmpId).toBeUndefined();
       expect(result.data.mobile).toBeUndefined();
       expect(result.data.email).toBeUndefined();
       expect(result.data.address).toBeUndefined();
@@ -35,11 +37,6 @@ describe("patientSchema", () => {
 
   it("rejects a missing name", () => {
     const result = patientSchema.safeParse({ ...validInput, name: "" });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects a missing UID/Emp Id", () => {
-    const result = patientSchema.safeParse({ ...validInput, uidEmpId: "" });
     expect(result.success).toBe(false);
   });
 

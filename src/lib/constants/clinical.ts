@@ -17,11 +17,23 @@ function range(start: number, end: number, step: number): number[] {
   return Array.from({ length: count + 1 }, (_, i) => Math.round((start + i * step) * 100) / 100);
 }
 
-/** Sphere: -20.00 to +20.00, 0.25 steps. */
-export const sphereOptions = range(-20, 20, 0.25).map(formatSignedPower);
+/**
+ * Clinic dropdown order for signed power fields: increasing negative
+ * magnitude first (-step, -2*step, ... -maxMagnitude), then 0.00, then
+ * increasing positive magnitude (+step, ... +maxMagnitude). This matches
+ * how the clinic reads these dropdowns and is NOT plain numeric order.
+ */
+function signedRange(maxMagnitude: number, step: number): number[] {
+  const count = Math.round(maxMagnitude / step);
+  const magnitudes = Array.from({ length: count }, (_, i) => Math.round((i + 1) * step * 100) / 100);
+  return [...magnitudes.map((v) => -v), 0, ...magnitudes];
+}
 
-/** Cylinder: -5.00 to +5.00, 0.25 steps. */
-export const cylinderOptions = range(-5, 5, 0.25).map(formatSignedPower);
+/** Sphere: -0.25 down to -20.00, then 0.00, then +0.25 up to +20.00. */
+export const sphereOptions = signedRange(20, 0.25).map(formatSignedPower);
+
+/** Cylinder: -0.25 down to -5.00, then 0.00, then +0.25 up to +5.00. */
+export const cylinderOptions = signedRange(5, 0.25).map(formatSignedPower);
 
 /** Axis: 0 to 180 degrees, 1 degree steps. */
 export const axisOptions = range(0, 180, 1).map((v) => String(v));

@@ -38,18 +38,23 @@ export async function registerPatientAction(
 
   const { consultationDate, ...patientData } = parsed.data;
 
-  const [existing] = await db
-    .select({ id: patients.id })
-    .from(patients)
-    .where(sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`)
-    .limit(1);
+  // UID / Emp Id is optional -- the uniqueness check only applies when one
+  // was actually provided (Postgres' unique index likewise allows any
+  // number of NULL uidEmpId rows without conflict).
+  if (patientData.uidEmpId) {
+    const [existing] = await db
+      .select({ id: patients.id })
+      .from(patients)
+      .where(sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`)
+      .limit(1);
 
-  if (existing) {
-    return {
-      error:
-        "A patient with this UID / Emp Id already exists. Use Search to find them and start a new visit instead.",
-      existingPatientId: existing.id,
-    };
+    if (existing) {
+      return {
+        error:
+          "A patient with this UID / Emp Id already exists. Use Search to find them and start a new visit instead.",
+        existingPatientId: existing.id,
+      };
+    }
   }
 
   let created: { patientId: string; consultationId: string };
@@ -82,7 +87,7 @@ export async function registerPatientAction(
     // land concurrently and both pass the check above -- the DB's unique
     // index is the actual guarantee, this just turns it into the same
     // friendly message instead of a raw constraint-violation error.
-    if (isUniqueViolation(err)) {
+    if (isUniqueViolation(err) && patientData.uidEmpId) {
       const [race] = await db
         .select({ id: patients.id })
         .from(patients)

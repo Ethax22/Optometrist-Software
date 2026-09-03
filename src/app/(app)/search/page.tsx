@@ -5,14 +5,7 @@ import { patients } from "@/lib/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { SearchResultsTable } from "./search-results-table";
 
 const PAGE_SIZE = 20;
 
@@ -65,9 +58,14 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Search Patients</h1>
-        <p className="text-muted-foreground">Search by name, UID/Emp Id, or mobile.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Search Patients</h1>
+          <p className="text-muted-foreground">Search by name, UID/Emp Id, or mobile.</p>
+        </div>
+        <Button variant="outline" size="sm" render={<a href="/api/prescriptions/export/csv" />}>
+          Export All Prescriptions (CSV)
+        </Button>
       </div>
 
       <form method="GET" className="flex gap-2">
@@ -88,50 +86,7 @@ export default async function SearchPage({
 
       {shouldQuery && (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>UID / Emp Id</TableHead>
-                <TableHead>Age / Gender</TableHead>
-                <TableHead>Mobile</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {results.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No patients found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                results.map((patient) => (
-                  <TableRow key={patient.id} className="cursor-pointer hover:bg-muted/50">
-                    <TableCell>
-                      <Link href={`/patients/${patient.id}`} className="block">
-                        {patient.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/patients/${patient.id}`} className="block">
-                        {patient.uidEmpId}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/patients/${patient.id}`} className="block">
-                        {patient.age} / {patient.gender}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/patients/${patient.id}`} className="block">
-                        {patient.mobile ?? "-"}
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <SearchResultsTable results={results} />
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between text-sm text-muted-foreground">

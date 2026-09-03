@@ -68,9 +68,7 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="uidEmpId">
-                UID / Emp Id<span className="text-destructive"> *</span>
-              </Label>
+              <Label htmlFor="uidEmpId">UID / Emp Id</Label>
               <Input id="uidEmpId" {...register("uidEmpId")} />
               {errors.uidEmpId && (
                 <p className="text-sm text-destructive">{errors.uidEmpId.message}</p>

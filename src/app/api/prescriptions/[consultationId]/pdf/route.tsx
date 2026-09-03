@@ -12,12 +12,13 @@ import { logAudit } from "@/lib/audit/log";
 export const runtime = "nodejs";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ consultationId: string }> },
 ) {
   const { appUser } = await requireOptometrist();
 
   const { consultationId } = await params;
+  const includeLogo = new URL(request.url).searchParams.get("logo") !== "false";
 
   const [row] = await db
     .select({
@@ -60,6 +61,7 @@ export async function GET(
 
   const buffer = await renderToBuffer(
     <PrescriptionDocument
+      includeLogo={includeLogo}
       data={{
         patientName: row.patientName,
         patientUid: row.patientUid,
@@ -101,10 +103,12 @@ export async function GET(
     metadata: { examOptometristId: row.optometristId },
   });
 
+  const suffix = includeLogo ? "" : "-no-logo";
+  const uidPart = row.patientUid ?? consultationId.slice(0, 8);
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="prescription-${row.patientUid}-${row.consultationDate}.pdf"`,
+      "Content-Disposition": `attachment; filename="prescription-${uidPart}-${row.consultationDate}${suffix}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });
