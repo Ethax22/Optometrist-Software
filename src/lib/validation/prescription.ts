@@ -1,9 +1,26 @@
 import { z } from "zod";
-import { colorBlindnessOptions, optometristRemarksOptions } from "@/lib/constants/clinical";
+import { colorBlindnessOptions } from "@/lib/constants/clinical";
 
 const optionalDropdown = () =>
   z
     .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined));
+
+const optionalPower = () =>
+  z
+    .string()
+    .regex(/^[+-]\d+(\.\d+)?$/, "Must be a signed number, e.g. +2.25 or -0.50")
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined));
+
+const optionalAxis = () =>
+  z
+    .string()
+    .regex(/^\d+$/, "Axis must be a whole number")
+    .refine((v) => Number(v) >= 0 && Number(v) <= 180, "Axis must be between 0 and 180")
     .optional()
     .or(z.literal(""))
     .transform((v) => (v ? v : undefined));
@@ -16,15 +33,15 @@ const optionalDropdown = () =>
  * (or null) right before the DB write.
  */
 export const prescriptionSchema = z.object({
-  rightSph: optionalDropdown(),
-  rightCyl: optionalDropdown(),
-  rightAxis: optionalDropdown(),
-  rightAdd: optionalDropdown(),
+  rightSph: optionalPower(),
+  rightCyl: optionalPower(),
+  rightAxis: optionalAxis(),
+  rightAdd: optionalPower(),
 
-  leftSph: optionalDropdown(),
-  leftCyl: optionalDropdown(),
-  leftAxis: optionalDropdown(),
-  leftAdd: optionalDropdown(),
+  leftSph: optionalPower(),
+  leftCyl: optionalPower(),
+  leftAxis: optionalAxis(),
+  leftAdd: optionalPower(),
 
   distanceUncorrectedRight: optionalDropdown(),
   distanceUncorrectedLeft: optionalDropdown(),
@@ -42,7 +59,9 @@ export const prescriptionSchema = z.object({
   colorBlindnessResult: z.enum(colorBlindnessOptions).optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
 
   optometristRemarks: z
-    .enum(optometristRemarksOptions)
+    .string()
+    .trim()
+    .max(500, "Optometrist remarks must be under 500 characters")
     .optional()
     .or(z.literal(""))
     .transform((v) => (v ? v : undefined)),

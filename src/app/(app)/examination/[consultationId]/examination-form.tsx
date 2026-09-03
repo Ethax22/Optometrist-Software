@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ControlledSelect } from "@/components/form/controlled-select";
+import { ControlledCombobox } from "@/components/form/controlled-combobox";
 import {
   sphereOptions,
   cylinderOptions,
@@ -129,17 +130,17 @@ export function ExaminationForm({
         <CardContent className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Right Eye</h3>
-            <ControlledSelect control={control} name="rightSph" label="SPH" options={sphereOptions} />
-            <ControlledSelect control={control} name="rightCyl" label="CYL" options={cylinderOptions} />
-            <ControlledSelect control={control} name="rightAxis" label="AXIS" options={axisOptions} />
-            <ControlledSelect control={control} name="rightAdd" label="ADD" options={addOptions} />
+            <ControlledCombobox control={control} name="rightSph" label="SPH" options={sphereOptions} />
+            <ControlledCombobox control={control} name="rightCyl" label="CYL" options={cylinderOptions} />
+            <ControlledCombobox control={control} name="rightAxis" label="AXIS" options={axisOptions} />
+            <ControlledCombobox control={control} name="rightAdd" label="ADD" options={addOptions} />
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Left Eye</h3>
-            <ControlledSelect control={control} name="leftSph" label="SPH" options={sphereOptions} />
-            <ControlledSelect control={control} name="leftCyl" label="CYL" options={cylinderOptions} />
-            <ControlledSelect control={control} name="leftAxis" label="AXIS" options={axisOptions} />
-            <ControlledSelect control={control} name="leftAdd" label="ADD" options={addOptions} />
+            <ControlledCombobox control={control} name="leftSph" label="SPH" options={sphereOptions} />
+            <ControlledCombobox control={control} name="leftCyl" label="CYL" options={cylinderOptions} />
+            <ControlledCombobox control={control} name="leftAxis" label="AXIS" options={axisOptions} />
+            <ControlledCombobox control={control} name="leftAdd" label="ADD" options={addOptions} />
           </div>
         </CardContent>
       </Card>
@@ -149,37 +150,37 @@ export function ExaminationForm({
           <CardTitle>Distance Vision</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="distanceUncorrectedRight"
             label="Right Eye Uncorrected"
             options={distanceVisualAcuityOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="distanceUncorrectedLeft"
             label="Left Eye Uncorrected"
             options={distanceVisualAcuityOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="distanceCorrectedRight"
             label="Right Eye Corrected"
             options={distanceVisualAcuityOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="distanceCorrectedLeft"
             label="Left Eye Corrected"
             options={distanceVisualAcuityOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="pinholeRight"
             label="Pin-Hole Right Eye"
             options={pinholeOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="pinholeLeft"
             label="Pin-Hole Left Eye"
@@ -193,25 +194,25 @@ export function ExaminationForm({
           <CardTitle>Near Vision</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="nearUncorrectedRight"
             label="Right Eye Uncorrected"
             options={nearVisualAcuityOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="nearUncorrectedLeft"
             label="Left Eye Uncorrected"
             options={nearVisualAcuityOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="nearCorrectedRight"
             label="Right Eye Corrected"
             options={nearVisualAcuityOptions}
           />
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="nearCorrectedLeft"
             label="Left Eye Corrected"
@@ -239,12 +240,12 @@ export function ExaminationForm({
           <CardTitle>Remarks</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ControlledSelect
+          <ControlledCombobox
             control={control}
             name="optometristRemarks"
             label="Optometrist Remarks"
             options={optometristRemarksOptions}
-            placeholder="Select Optometrist Remarks"
+            placeholder="Select or type Optometrist Remarks"
           />
 
           <div className="space-y-1.5">
