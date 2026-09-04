@@ -78,12 +78,17 @@ npm run build
 ## 6. Seed the 3 accounts
 
 ```bash
-npm run seed:optometrist
+npm run seed:optometrist -- optometrist1@example.com 'choose-a-strong-password'
+npm run seed:optometrist -- optometrist2@example.com 'choose-a-strong-password'
+npm run seed:optometrist -- admin@example.com 'choose-a-strong-password'
 ```
-Run it once per person (or adapt the script) so the 2 optometrists + you
-(admin) each have a login. There's no public sign-up — accounts only ever
-come from this script, which is what keeps the app closed to outsiders on
-top of the login gate itself.
+The `--` is required so npm passes the email/password through to the script
+instead of treating them as npm flags. Run it once per person (each with
+their own email/password) so the 2 optometrists + you (admin) each have a
+login. Running it again for an email that already exists just resets that
+account's password instead of creating a duplicate. There's no public
+sign-up — accounts only ever come from this script, which is what keeps the
+app closed to outsiders on top of the login gate itself.
 
 ## 7. Start the app with PM2
 

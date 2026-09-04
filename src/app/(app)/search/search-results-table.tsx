@@ -25,6 +25,7 @@ type Patient = {
 export function SearchResultsTable({ results }: { results: Patient[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState(false);
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
 
   const allSelected = results.length > 0 && selected.size === results.length;
 
@@ -69,15 +70,53 @@ export function SearchResultsTable({ results }: { results: Patient[] }) {
     }
   }
 
+  async function downloadSelectedCsv() {
+    if (selected.size === 0) return;
+    setDownloadingCsv(true);
+    try {
+      const response = await fetch("/api/prescriptions/export/csv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientIds: [...selected] }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        toast.error(body?.error ?? "Failed to generate the CSV export");
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prescriptions-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingCsv(false);
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">
-          {selected.size > 0 ? `${selected.size} selected` : "Select clients to bulk-download PDFs"}
+          {selected.size > 0 ? `${selected.size} selected` : "Select clients to bulk-download"}
         </span>
-        <Button size="sm" disabled={selected.size === 0 || downloading} onClick={downloadSelected}>
-          {downloading ? "Preparing ZIP..." : "Download Selected (PDF, No Logo)"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={selected.size === 0 || downloadingCsv}
+            onClick={downloadSelectedCsv}
+          >
+            {downloadingCsv ? "Preparing CSV..." : "Download Selected (CSV)"}
+          </Button>
+          <Button size="sm" disabled={selected.size === 0 || downloading} onClick={downloadSelected}>
+            {downloading ? "Preparing ZIP..." : "Download Selected (PDF, No Logo)"}
+          </Button>
+        </div>
       </div>
 
       <Table>

@@ -1,0 +1,4 @@
+ALTER TABLE "prescriptions" ADD COLUMN "color_blindness_re" text;--> statement-breakpoint
+ALTER TABLE "prescriptions" ADD COLUMN "color_blindness_le" text;--> statement-breakpoint
+ALTER TABLE "prescriptions" ADD CONSTRAINT "color_blindness_re_check" CHECK ("prescriptions"."color_blindness_re" is null or "prescriptions"."color_blindness_re" in ('1/17', '2/17', '3/17', '4/17', '5/17', '6/17', '7/17', '8/17', '9/17', '10/17', '11/17', '12/17', '13/17', '14/17', '15/17', '16/17', '17/17'));--> statement-breakpoint
+ALTER TABLE "prescriptions" ADD CONSTRAINT "color_blindness_le_check" CHECK ("prescriptions"."color_blindness_le" is null or "prescriptions"."color_blindness_le" in ('1/17', '2/17', '3/17', '4/17', '5/17', '6/17', '7/17', '8/17', '9/17', '10/17', '11/17', '12/17', '13/17', '14/17', '15/17', '16/17', '17/17'));

@@ -19,6 +19,7 @@ import {
   nearVisualAcuityOptions,
   pinholeOptions,
   colorBlindnessOptions,
+  colorBlindnessScoreOptions,
   optometristRemarksOptions,
   formatSignedPower,
 } from "@/lib/constants/clinical";
@@ -31,6 +32,33 @@ import {
 import type { prescriptions } from "@/lib/db/schema";
 
 type Prescription = typeof prescriptions.$inferSelect;
+
+/** Fixed values for a patient with no clinical findings, used by "Mark as Normal". */
+const NORMAL_DEFAULTS: PrescriptionInput = {
+  rightSph: "+0.00",
+  rightCyl: "+0.00",
+  rightAxis: "0",
+  rightAdd: "+0.00",
+  leftSph: "+0.00",
+  leftCyl: "+0.00",
+  leftAxis: "0",
+  leftAdd: "+0.00",
+  distanceUncorrectedRight: "6/6",
+  distanceUncorrectedLeft: "6/6",
+  distanceCorrectedRight: "6/6",
+  distanceCorrectedLeft: "6/6",
+  nearUncorrectedRight: "N6",
+  nearUncorrectedLeft: "N6",
+  nearCorrectedRight: "N6",
+  nearCorrectedLeft: "N6",
+  pinholeRight: "6/6",
+  pinholeLeft: "6/6",
+  colorBlindnessResult: "Normal",
+  colorBlindnessRe: "17/17",
+  colorBlindnessLe: "17/17",
+  optometristRemarks: "Both Eyes: Normal Vision. Review after 6 months or 1 year",
+  remarks: "Normal examination. No abnormalities detected.",
+};
 
 function defaultsFromPrescription(p: Prescription | null): PrescriptionInput {
   return {
@@ -53,6 +81,8 @@ function defaultsFromPrescription(p: Prescription | null): PrescriptionInput {
     pinholeRight: p?.pinholeRight ?? undefined,
     pinholeLeft: p?.pinholeLeft ?? undefined,
     colorBlindnessResult: (p?.colorBlindnessResult as PrescriptionInput["colorBlindnessResult"]) ?? undefined,
+    colorBlindnessRe: (p?.colorBlindnessRe as PrescriptionInput["colorBlindnessRe"]) ?? undefined,
+    colorBlindnessLe: (p?.colorBlindnessLe as PrescriptionInput["colorBlindnessLe"]) ?? undefined,
     optometristRemarks: (p?.optometristRemarks as PrescriptionInput["optometristRemarks"]) ?? undefined,
     remarks: p?.remarks ?? undefined,
   };
@@ -74,10 +104,14 @@ export function ExaminationForm({
     { consultationId: string } & PrescriptionInput
   >(saveAndGeneratePdfAction, null);
 
-  const { control, register, handleSubmit } = useForm<z.input<typeof prescriptionSchema>>({
+  const { control, register, handleSubmit, reset } = useForm<z.input<typeof prescriptionSchema>>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: defaultsFromPrescription(prescription),
   });
+
+  function onMarkNormal() {
+    reset(NORMAL_DEFAULTS);
+  }
 
   const busy = savePending || pdfPending;
   const state = pdfState ?? saveState;
@@ -123,6 +157,12 @@ export function ExaminationForm({
 
   return (
     <form className="space-y-6">
+      <div className="flex justify-end">
+        <Button type="button" variant="outline" size="sm" disabled={busy} onClick={onMarkNormal}>
+          Mark as Normal
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Refraction</CardTitle>
@@ -231,6 +271,18 @@ export function ExaminationForm({
             name="colorBlindnessResult"
             label="Color Blindness Test Result"
             options={colorBlindnessOptions}
+          />
+          <ControlledCombobox
+            control={control}
+            name="colorBlindnessRe"
+            label="RE Result"
+            options={colorBlindnessScoreOptions}
+          />
+          <ControlledCombobox
+            control={control}
+            name="colorBlindnessLe"
+            label="LE Result"
+            options={colorBlindnessScoreOptions}
           />
         </CardContent>
       </Card>

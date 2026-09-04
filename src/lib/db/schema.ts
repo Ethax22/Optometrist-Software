@@ -14,6 +14,11 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { colorBlindnessScoreOptions } from "@/lib/constants/clinical";
+
+// Static, code-generated list ("1/17".."17/17") -- safe to inline as a raw
+// SQL literal list, unlike user-supplied data.
+const colorBlindnessScoreList = colorBlindnessScoreOptions.map((v) => `'${v}'`).join(", ");
 
 export const users = pgTable(
   "users",
@@ -166,6 +171,8 @@ export const prescriptions = pgTable("prescriptions", {
   pinholeLeft: text("pinhole_left"),
 
   colorBlindnessResult: text("color_blindness_result"),
+  colorBlindnessRe: text("color_blindness_re"),
+  colorBlindnessLe: text("color_blindness_le"),
 
   optometristRemarks: text("optometrist_remarks"),
   remarks: text("remarks"),
@@ -184,6 +191,14 @@ export const prescriptions = pgTable("prescriptions", {
   check(
     "color_blindness_result_check",
     sql`${table.colorBlindnessResult} is null or ${table.colorBlindnessResult} in ('Normal', 'Abnormal')`,
+  ),
+  check(
+    "color_blindness_re_check",
+    sql`${table.colorBlindnessRe} is null or ${table.colorBlindnessRe} in (${sql.raw(colorBlindnessScoreList)})`,
+  ),
+  check(
+    "color_blindness_le_check",
+    sql`${table.colorBlindnessLe} is null or ${table.colorBlindnessLe} in (${sql.raw(colorBlindnessScoreList)})`,
   ),
 ]);
 

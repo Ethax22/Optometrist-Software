@@ -1,87 +1,54 @@
 import { NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { consultations, patients, prescriptions } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit/log";
 import { buildCsv } from "@/lib/csv/format";
-import { formatPowerForPdf, formatAxisForPdf } from "@/lib/pdf/format";
 
 const HEADERS = [
-  "Patient Name",
-  "UID / Emp Id",
-  "Age",
+  "#",
+  "Name",
   "Gender",
-  "Mobile",
-  "Consultation Date",
-  "Right Sph",
-  "Right Cyl",
-  "Right Axis",
-  "Right Add",
-  "Left Sph",
-  "Left Cyl",
-  "Left Axis",
-  "Left Add",
-  "Distance Uncorrected Right",
-  "Distance Uncorrected Left",
-  "Distance Corrected Right",
-  "Distance Corrected Left",
-  "Near Uncorrected Right",
-  "Near Uncorrected Left",
-  "Near Corrected Right",
-  "Near Corrected Left",
-  "Pinhole Right",
-  "Pinhole Left",
+  "Age",
+  "MRN",
+  "Color Blindness RE",
+  "Color Blindness LE",
   "Color Blindness Result",
   "Optometrist Remarks",
   "Remarks",
 ];
 
-export async function GET() {
-  const { appUser } = await requireOptometrist();
+const bodySchema = z.object({
+  patientIds: z.array(z.string().uuid()).min(1).max(500),
+});
 
+async function buildPrescriptionsCsv(userId: string, patientIds: string[] | null) {
   const rows = await db
     .select({
       patientName: patients.name,
       patientUid: patients.uidEmpId,
       patientAge: patients.age,
       patientGender: patients.gender,
-      patientMobile: patients.mobile,
-      consultationDate: consultations.consultationDate,
       prescription: prescriptions,
     })
     .from(prescriptions)
     .innerJoin(consultations, eq(prescriptions.consultationId, consultations.id))
     .innerJoin(patients, eq(consultations.patientId, patients.id))
+    .where(patientIds ? inArray(patients.id, patientIds) : undefined)
     .orderBy(patients.name, desc(consultations.consultationDate));
 
   const csv = buildCsv(
     HEADERS,
-    rows.map((row) => [
+    rows.map((row, index) => [
+      index + 1,
       row.patientName,
-      row.patientUid,
-      row.patientAge,
       row.patientGender,
-      row.patientMobile,
-      row.consultationDate,
-      formatPowerForPdf(row.prescription.rightSph),
-      formatPowerForPdf(row.prescription.rightCyl),
-      formatAxisForPdf(row.prescription.rightAxis),
-      formatPowerForPdf(row.prescription.rightAdd),
-      formatPowerForPdf(row.prescription.leftSph),
-      formatPowerForPdf(row.prescription.leftCyl),
-      formatAxisForPdf(row.prescription.leftAxis),
-      formatPowerForPdf(row.prescription.leftAdd),
-      row.prescription.distanceUncorrectedRight,
-      row.prescription.distanceUncorrectedLeft,
-      row.prescription.distanceCorrectedRight,
-      row.prescription.distanceCorrectedLeft,
-      row.prescription.nearUncorrectedRight,
-      row.prescription.nearUncorrectedLeft,
-      row.prescription.nearCorrectedRight,
-      row.prescription.nearCorrectedLeft,
-      row.prescription.pinholeRight,
-      row.prescription.pinholeLeft,
+      row.patientAge,
+      row.patientUid,
+      row.prescription.colorBlindnessRe,
+      row.prescription.colorBlindnessLe,
       row.prescription.colorBlindnessResult,
       row.prescription.optometristRemarks,
       row.prescription.remarks,
@@ -89,10 +56,10 @@ export async function GET() {
   );
 
   await logAudit({
-    userId: appUser.id,
+    userId,
     action: "prescriptions_csv_exported",
     entityType: "prescription",
-    metadata: { rowCount: rows.length },
+    metadata: { rowCount: rows.length, selected: patientIds !== null },
   });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -104,4 +71,20 @@ export async function GET() {
       "Cache-Control": "private, no-store",
     },
   });
+}
+
+export async function GET() {
+  const { appUser } = await requireOptometrist();
+  return buildPrescriptionsCsv(appUser.id, null);
+}
+
+export async function POST(request: Request) {
+  const { appUser } = await requireOptometrist();
+
+  const parsed = bodySchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  return buildPrescriptionsCsv(appUser.id, parsed.data.patientIds);
 }

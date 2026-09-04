@@ -86,8 +86,11 @@ export const nearVisualAcuityOptions = [
   "N6",
 ] as const;
 
-/** Only an overall result is captured -- no per-eye RE/LE breakdown. */
+/** Overall pass/fail result. */
 export const colorBlindnessOptions = ["Normal", "Abnormal"] as const;
+
+/** Per-eye Ishihara score: number of plates read correctly out of 17. */
+export const colorBlindnessScoreOptions = range(1, 17, 1).map((v) => `${v}/17`);
 
 /** Standard optometrist remarks, shown as a dropdown above the free-text remarks box. */
 export const optometristRemarksOptions = [

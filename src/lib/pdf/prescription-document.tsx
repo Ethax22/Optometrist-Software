@@ -51,6 +51,8 @@ export interface PrescriptionPdfData {
   pinholeLeft: string | null;
 
   colorBlindnessResult: string | null;
+  colorBlindnessRe: string | null;
+  colorBlindnessLe: string | null;
   optometristRemarks: string | null;
   remarks: string | null;
 }
@@ -333,7 +335,8 @@ export function PrescriptionDocument({
 
           <Text style={styles.paragraph}>
             <Text style={styles.bold}>Color Blindness Test Result: </Text>
-            {data.colorBlindnessResult ?? "-"}.
+            {data.colorBlindnessResult ?? "-"}
+            {" "}(RE: {data.colorBlindnessRe ?? "-"}, LE: {data.colorBlindnessLe ?? "-"}).
           </Text>
 
           <View style={styles.signatureBlock}>
