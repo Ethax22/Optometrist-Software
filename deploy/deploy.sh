@@ -9,7 +9,7 @@ echo "==> Pulling latest main"
 git pull origin main
 
 echo "==> Installing dependencies"
-npm ci
+npm install
 
 echo "==> Running DB migrations"
 npm run db:migrate

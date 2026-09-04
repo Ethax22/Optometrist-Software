@@ -70,10 +70,16 @@ Edit `.env`:
 - `RESEND_API_KEY=` your real Resend key (without this, password-reset emails only log server-side instead of sending)
 
 ```bash
-npm ci
+npm install
 npm run db:migrate
 npm run build
 ```
+
+Use `npm install`, not `npm ci` -- across a local machine and a VPS with
+different npm versions, `npm ci`'s strict lockfile check can false-positive
+on optional platform-specific native packages (esbuild/sharp bindings) even
+when nothing is actually wrong. `npm install` reconciles instead of
+demanding an exact match.
 
 ## 6. Seed the 3 accounts
 
