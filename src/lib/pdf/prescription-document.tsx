@@ -66,7 +66,13 @@ const styles = StyleSheet.create({
   },
   // The reference prescription frames the whole sheet in a heavy border --
   // drawn on a wrapper inside the page's own padding, not on the page itself.
-  frame: { flex: 1, borderWidth: 3, borderColor: "#000000", padding: 28 },
+  frame: {
+    flex: 1,
+    borderWidth: 3,
+    borderColor: "#000000",
+    padding: 28,
+    paddingTop: 48,
+  },
   letterhead: {
     alignItems: "center",
     marginBottom: 20,
