@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "#000000",
     padding: 28,
-    paddingTop: 48,
+    paddingTop: 100,
   },
   letterhead: {
     alignItems: "center",
