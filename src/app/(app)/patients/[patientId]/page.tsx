@@ -14,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { NewVisitForm } from "./new-visit-form";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { deletePatientAction, deleteConsultationAction } from "@/lib/patients/actions";
 
 export default async function PatientPage({
   params,
@@ -41,8 +43,15 @@ export default async function PatientPage({
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
           <CardTitle>{patient.name}</CardTitle>
+          <ConfirmDeleteDialog
+            action={deletePatientAction.bind(null, patient.id)}
+            triggerLabel="Delete Patient"
+            title="Delete this patient?"
+            description={`This permanently deletes ${patient.name} and every consultation and prescription on file for them. This cannot be undone.`}
+            confirmLabel="Delete Patient"
+          />
         </CardHeader>
         <CardContent className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
           <p>
@@ -130,6 +139,19 @@ export default async function PatientPage({
                           Download
                         </Button>
                       )}
+                      <ConfirmDeleteDialog
+                        action={deleteConsultationAction.bind(
+                          null,
+                          visit.consultationId,
+                          patient.id,
+                        )}
+                        triggerLabel="Delete"
+                        title="Delete this visit?"
+                        description={`This permanently deletes the ${visit.consultationDate} consultation${
+                          visit.hasPrescription ? " and its prescription" : ""
+                        } for ${patient.name}. This cannot be undone.`}
+                        confirmLabel="Delete Visit"
+                      />
                     </TableCell>
                   </TableRow>
                 ))

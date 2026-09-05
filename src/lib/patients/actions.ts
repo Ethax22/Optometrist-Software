@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { patients, consultations } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
@@ -154,4 +154,59 @@ export async function startNewVisitAction(
   });
 
   redirect(`/examination/${consultation.id}`);
+}
+
+/**
+ * Permanently deletes a patient and, via the DB's ON DELETE CASCADE, every
+ * consultation and prescription tied to them. There is no soft-delete or
+ * undo -- this is a deliberate hard delete, so the caller must confirm with
+ * the user before invoking it.
+ */
+export async function deletePatientAction(patientId: string): Promise<void> {
+  const { appUser } = await requireOptometrist();
+
+  const [deleted] = await db
+    .delete(patients)
+    .where(eq(patients.id, patientId))
+    .returning({ id: patients.id });
+
+  if (deleted) {
+    await logAudit({
+      userId: appUser.id,
+      action: "patient_deleted",
+      entityType: "patient",
+      entityId: deleted.id,
+    });
+  }
+
+  redirect("/search");
+}
+
+/**
+ * Permanently deletes a single consultation (and, via cascade, its
+ * prescription if one exists) while leaving the patient and their other
+ * visits intact. Same hard-delete caveat as deletePatientAction.
+ */
+export async function deleteConsultationAction(
+  consultationId: string,
+  patientId: string,
+): Promise<void> {
+  const { appUser } = await requireOptometrist();
+
+  const [deleted] = await db
+    .delete(consultations)
+    .where(eq(consultations.id, consultationId))
+    .returning({ id: consultations.id });
+
+  if (deleted) {
+    await logAudit({
+      userId: appUser.id,
+      action: "consultation_deleted",
+      entityType: "consultation",
+      entityId: deleted.id,
+      metadata: { patientId },
+    });
+  }
+
+  redirect(`/patients/${patientId}`);
 }
