@@ -16,6 +16,17 @@ function prettyDate(date: string) {
   return format(new Date(`${date}T00:00:00`), "PPP");
 }
 
+const istTimeFormatter = new Intl.DateTimeFormat("en-IN", {
+  timeZone: "Asia/Kolkata",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
+function formatIstTime(date: Date) {
+  return istTimeFormatter.format(date);
+}
+
 export default async function StatusPage({
   searchParams,
 }: {
@@ -93,7 +104,7 @@ export default async function StatusPage({
             visits={visits.map((visit) => ({
               consultationId: visit.consultationId,
               consultationDate: format(new Date(`${visit.consultationDate}T00:00:00`), "PP"),
-              time: format(visit.createdAt, "p"),
+              time: formatIstTime(visit.createdAt),
               patientId: visit.patientId,
               patientName: visit.patientName,
               patientUid: visit.patientUid,
