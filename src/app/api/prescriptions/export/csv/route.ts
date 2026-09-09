@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, desc, inArray } from "drizzle-orm";
+import { and, eq, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { consultations, patients, prescriptions } from "@/lib/db/schema";
@@ -36,7 +36,12 @@ async function buildPrescriptionsCsv(userId: string, patientIds: string[] | null
     .from(prescriptions)
     .innerJoin(consultations, eq(prescriptions.consultationId, consultations.id))
     .innerJoin(patients, eq(consultations.patientId, patients.id))
-    .where(patientIds ? inArray(patients.id, patientIds) : undefined)
+    .where(
+      and(
+        eq(patients.createdBy, userId),
+        patientIds ? inArray(patients.id, patientIds) : undefined,
+      ),
+    )
     .orderBy(patients.name, desc(consultations.consultationDate));
 
   const csv = buildCsv(

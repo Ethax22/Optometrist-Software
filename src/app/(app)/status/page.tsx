@@ -2,6 +2,7 @@ import { eq, and, gte, lte, asc, desc } from "drizzle-orm";
 import { format } from "date-fns";
 import { db } from "@/lib/db/client";
 import { consultations, patients, prescriptions } from "@/lib/db/schema";
+import { requireOptometrist } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +33,7 @@ export default async function StatusPage({
 }: {
   searchParams: Promise<{ date?: string; range?: string }>;
 }) {
+  const { appUser } = await requireOptometrist();
   const { date: dateParam, range: rangeParam } = await searchParams;
   const date =
     dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
@@ -55,12 +57,15 @@ export default async function StatusPage({
     .innerJoin(patients, eq(consultations.patientId, patients.id))
     .leftJoin(prescriptions, eq(prescriptions.consultationId, consultations.id))
     .where(
-      start && end
-        ? and(
-            gte(consultations.consultationDate, start),
-            lte(consultations.consultationDate, end),
-          )
-        : undefined,
+      and(
+        eq(patients.createdBy, appUser.id),
+        start && end
+          ? and(
+              gte(consultations.consultationDate, start),
+              lte(consultations.consultationDate, end),
+            )
+          : undefined,
+      ),
     )
     // A single day reads best oldest-first (the clinic's running order); a
     // multi-day range reads best newest-first.

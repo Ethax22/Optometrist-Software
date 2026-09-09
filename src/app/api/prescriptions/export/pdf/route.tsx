@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { inArray, eq, desc } from "drizzle-orm";
+import { and, inArray, eq, desc } from "drizzle-orm";
 import { renderToBuffer } from "@react-pdf/renderer";
 import JSZip from "jszip";
 import { z } from "zod";
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     .from(prescriptions)
     .innerJoin(consultations, eq(prescriptions.consultationId, consultations.id))
     .innerJoin(patients, eq(consultations.patientId, patients.id))
-    .where(inArray(patients.id, patientIds))
+    .where(and(eq(patients.createdBy, appUser.id), inArray(patients.id, patientIds)))
     .orderBy(patients.id, desc(consultations.consultationDate));
 
   // Rows are ordered per-patient by consultation date descending, so the

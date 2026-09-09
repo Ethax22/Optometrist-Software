@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { db } from "@/lib/db/client";
 import { consultations, patients, prescriptions, optometristProfiles, users } from "@/lib/db/schema";
@@ -33,7 +33,7 @@ export async function GET(
     .from(consultations)
     .innerJoin(patients, eq(consultations.patientId, patients.id))
     .leftJoin(prescriptions, eq(prescriptions.consultationId, consultations.id))
-    .where(eq(consultations.id, consultationId))
+    .where(and(eq(consultations.id, consultationId), eq(patients.createdBy, appUser.id)))
     .limit(1);
 
   if (!row || !row.prescription) {

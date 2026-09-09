@@ -105,9 +105,14 @@ export const patients = pgTable(
   (table) => [
     check("patients_gender_check", sql`${table.gender} in ('Male', 'Female', 'Other')`),
     check("patients_age_check", sql`${table.age} > 0 and ${table.age} < 150`),
-    // Case-insensitive uniqueness -- "UID-001" and "uid-001" must collide,
-    // not silently create two separate patient records for the same person.
-    uniqueIndex("patients_uid_emp_id_unique_idx").on(sql`lower(${table.uidEmpId})`),
+    // Case-insensitive uniqueness scoped per optometrist -- "UID-001" and
+    // "uid-001" must collide within the same optometrist's own patients, but
+    // different optometrists may independently use the same UID/Emp Id since
+    // each only ever sees the patients they created.
+    uniqueIndex("patients_uid_emp_id_unique_idx").on(
+      sql`lower(${table.uidEmpId})`,
+      table.createdBy,
+    ),
     index("patients_name_idx").on(table.name),
     index("patients_mobile_idx").on(table.mobile),
   ],

@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db/client";
 import { patients, consultations, prescriptions } from "@/lib/db/schema";
+import { requireOptometrist } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +23,14 @@ export default async function PatientPage({
 }: {
   params: Promise<{ patientId: string }>;
 }) {
+  const { appUser } = await requireOptometrist();
   const { patientId } = await params;
 
-  const [patient] = await db.select().from(patients).where(eq(patients.id, patientId)).limit(1);
+  const [patient] = await db
+    .select()
+    .from(patients)
+    .where(and(eq(patients.id, patientId), eq(patients.createdBy, appUser.id)))
+    .limit(1);
   if (!patient) {
     notFound();
   }

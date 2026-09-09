@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { or, ilike, count } from "drizzle-orm";
+import { and, or, ilike, eq, count } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { patients } from "@/lib/db/schema";
+import { requireOptometrist } from "@/lib/auth/session";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
+  const { appUser } = await requireOptometrist();
   const { q, page: pageParam } = await searchParams;
   const query = (q?.trim() ?? "").slice(0, 200);
   const page = Math.max(1, Number(pageParam) || 1);
@@ -25,10 +27,13 @@ export default async function SearchPage({
   const shouldQuery = Boolean(query) && rateLimit.allowed;
 
   const whereClause = shouldQuery
-    ? or(
-        ilike(patients.name, `%${query}%`),
-        ilike(patients.uidEmpId, `%${query}%`),
-        ilike(patients.mobile, `%${query}%`),
+    ? and(
+        eq(patients.createdBy, appUser.id),
+        or(
+          ilike(patients.name, `%${query}%`),
+          ilike(patients.uidEmpId, `%${query}%`),
+          ilike(patients.mobile, `%${query}%`),
+        ),
       )
     : undefined;
 

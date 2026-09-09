@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db/client";
 import { consultations, patients, prescriptions } from "@/lib/db/schema";
+import { requireOptometrist } from "@/lib/auth/session";
 import { ExaminationForm } from "./examination-form";
 
 export default async function ExaminationPage({
@@ -9,6 +10,7 @@ export default async function ExaminationPage({
 }: {
   params: Promise<{ consultationId: string }>;
 }) {
+  const { appUser } = await requireOptometrist();
   const { consultationId } = await params;
 
   const [row] = await db
@@ -21,7 +23,7 @@ export default async function ExaminationPage({
     })
     .from(consultations)
     .innerJoin(patients, eq(consultations.patientId, patients.id))
-    .where(eq(consultations.id, consultationId))
+    .where(and(eq(consultations.id, consultationId), eq(patients.createdBy, appUser.id)))
     .limit(1);
 
   if (!row) {

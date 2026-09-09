@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { patients, consultations } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
@@ -45,7 +45,12 @@ export async function registerPatientAction(
     const [existing] = await db
       .select({ id: patients.id })
       .from(patients)
-      .where(sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`)
+      .where(
+        and(
+          sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`,
+          eq(patients.createdBy, appUser.id),
+        ),
+      )
       .limit(1);
 
     if (existing) {
@@ -91,7 +96,12 @@ export async function registerPatientAction(
       const [race] = await db
         .select({ id: patients.id })
         .from(patients)
-        .where(sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`)
+        .where(
+          and(
+            sql`lower(${patients.uidEmpId}) = lower(${patientData.uidEmpId})`,
+            eq(patients.createdBy, appUser.id),
+          ),
+        )
         .limit(1);
       return {
         error:
@@ -134,6 +144,15 @@ export async function startNewVisitAction(
     return { error: "Consultation date is required" };
   }
 
+  const [ownedPatient] = await db
+    .select({ id: patients.id })
+    .from(patients)
+    .where(and(eq(patients.id, input.patientId), eq(patients.createdBy, appUser.id)))
+    .limit(1);
+  if (!ownedPatient) {
+    return { error: "Patient not found" };
+  }
+
   const [consultation] = await db
     .insert(consultations)
     .values({
@@ -167,7 +186,7 @@ export async function deletePatientAction(patientId: string): Promise<void> {
 
   const [deleted] = await db
     .delete(patients)
-    .where(eq(patients.id, patientId))
+    .where(and(eq(patients.id, patientId), eq(patients.createdBy, appUser.id)))
     .returning({ id: patients.id });
 
   if (deleted) {
@@ -195,7 +214,7 @@ export async function deleteConsultationAction(
 
   const [deleted] = await db
     .delete(consultations)
-    .where(eq(consultations.id, consultationId))
+    .where(and(eq(consultations.id, consultationId), eq(consultations.createdBy, appUser.id)))
     .returning({ id: consultations.id });
 
   if (deleted) {

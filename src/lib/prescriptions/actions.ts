@@ -1,8 +1,8 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { prescriptions, consultations } from "@/lib/db/schema";
+import { prescriptions, consultations, patients } from "@/lib/db/schema";
 import { requireOptometrist } from "@/lib/auth/session";
 import { prescriptionSchema, type PrescriptionInput } from "@/lib/validation/prescription";
 import { logAudit } from "@/lib/audit/log";
@@ -28,7 +28,8 @@ async function persistPrescription(consultationId: string, data: PrescriptionInp
   const [row] = await db
     .select({ id: consultations.id })
     .from(consultations)
-    .where(eq(consultations.id, consultationId))
+    .innerJoin(patients, eq(consultations.patientId, patients.id))
+    .where(and(eq(consultations.id, consultationId), eq(patients.createdBy, userId)))
     .limit(1);
 
   if (!row) {
