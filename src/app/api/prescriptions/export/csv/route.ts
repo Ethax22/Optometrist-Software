@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq, desc, inArray } from "drizzle-orm";
+import { and, eq, desc, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { consultations, patients, prescriptions } from "@/lib/db/schema";
@@ -42,7 +42,16 @@ async function buildPrescriptionsCsv(userId: string, patientIds: string[] | null
         patientIds ? inArray(patients.id, patientIds) : undefined,
       ),
     )
-    .orderBy(patients.name, desc(consultations.consultationDate));
+    // Numeric UID ascending (falls back to name, then latest visit first for
+    // patients sharing a UID/name) -- a plain text sort would put "85090"
+    // after "9" once digit counts differ, which isn't what "sorted by UID"
+    // means for all-numeric UIDs like this clinic uses. Non-numeric/missing
+    // UIDs sort last (Postgres' default NULLS LAST for ASC).
+    .orderBy(
+      sql`CASE WHEN ${patients.uidEmpId} ~ '^[0-9]+$' THEN ${patients.uidEmpId}::bigint END`,
+      patients.name,
+      desc(consultations.consultationDate),
+    );
 
   const csv = buildCsv(
     HEADERS,

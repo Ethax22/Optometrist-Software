@@ -62,7 +62,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No prescriptions found for the selected clients" }, { status: 404 });
   }
 
-  const optometristIds = [...new Set([...latestByPatient.values()].map((r) => r.optometristId))];
+  // Numeric UID ascending, falling back to name for non-numeric/missing UIDs
+  // (sorted last) -- matches the order the bulk PDF zip is built in below.
+  function uidSortKey(uid: string | null): number {
+    return uid && /^\d+$/.test(uid) ? Number(uid) : Number.POSITIVE_INFINITY;
+  }
+  const sortedRows = [...latestByPatient.values()].sort((a, b) => {
+    const diff = uidSortKey(a.patientUid) - uidSortKey(b.patientUid);
+    return diff !== 0 ? diff : a.patientName.localeCompare(b.patientName);
+  });
+
+  const optometristIds = [...new Set(sortedRows.map((r) => r.optometristId))];
   const optometrists = optometristIds.length
     ? await db
         .select({
@@ -90,7 +100,7 @@ export async function POST(request: Request) {
   const zip = new JSZip();
   const usedNames = new Set<string>();
 
-  for (const row of latestByPatient.values()) {
+  for (const row of sortedRows) {
     const optometrist = optometristById.get(row.optometristId);
     const signatureDataUri = await getSignatureDataUri(optometrist?.signatureStoragePath);
 
