@@ -66,12 +66,14 @@ const styles = StyleSheet.create({
   },
   // The reference prescription frames the whole sheet in a heavy border --
   // drawn on a wrapper inside the page's own padding, not on the page itself.
+  // The space for the pre-printed letterhead sits above this frame, outside
+  // the border, so the border starts right at the letterhead's bottom line.
+  topSpacer: { height: 122 },
   frame: {
     flex: 1,
     borderWidth: 3,
     borderColor: "#000000",
     padding: 28,
-    paddingTop: 150,
   },
   letterhead: {
     alignItems: "center",
@@ -117,16 +119,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: "center",
   },
+  // The VA table's label column spans 3 of 11 grid units and each of the four
+  // Right/Left Eye columns spans 2 -- expressed as fixed percentages (not flex
+  // ratios) so every row resolves widths straight from the table's own width
+  // instead of through nested flex containers, which round independently per
+  // row and drift out of alignment.
   tdLabel: {
-    flex: 1.5,
+    width: "27.2727%",
     borderWidth: 0.5,
     borderColor: "#000000",
     padding: 7,
     fontFamily: "Times-Bold",
     fontSize: 11,
+    textAlign: "center",
   },
   vaLabelCell: {
-    flex: 1.5,
+    width: "27.2727%",
     borderWidth: 0.5,
     borderColor: "#000000",
     padding: 7,
@@ -135,8 +143,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     justifyContent: "center",
   },
+  vaHeaderGroupWrap: { width: "72.7273%" },
   vaHeaderGroup: {
-    flex: 2,
+    width: "50%",
     borderWidth: 0.5,
     borderColor: "#000000",
     padding: 7,
@@ -145,7 +154,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   vaCell: {
-    flex: 1,
+    width: "18.1818%",
+    borderWidth: 0.5,
+    borderColor: "#000000",
+    padding: 7,
+    fontSize: 11,
+    textAlign: "center",
+  },
+  // Same column as vaCell, but sized relative to vaHeaderGroupWrap (72.7273%
+  // of the table) rather than the table itself, since this row nests inside
+  // that wrapper -- 25% of it is the same absolute width as vaCell's 18.1818%.
+  vaSubHeaderCell: {
+    width: "25%",
     borderWidth: 0.5,
     borderColor: "#000000",
     padding: 7,
@@ -153,11 +173,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   pinholeCell: {
-    flex: 4,
+    width: "72.7273%",
     borderWidth: 0.5,
     borderColor: "#000000",
     padding: 7,
     fontSize: 11,
+    textAlign: "center",
   },
   paragraph: { marginTop: 16, lineHeight: 1.4 },
   bold: { fontFamily: "Times-Bold" },
@@ -221,6 +242,7 @@ export function PrescriptionDocument({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        <View style={styles.topSpacer} />
         <View style={styles.frame}>
           <View style={styles.letterhead}>
             {includeLogo && (
@@ -275,16 +297,16 @@ export function PrescriptionDocument({
           <View style={styles.table}>
             <View style={styles.tr}>
               <Text style={styles.vaLabelCell}>Visual Acuity</Text>
-              <View style={{ flex: 4 }}>
+              <View style={styles.vaHeaderGroupWrap}>
                 <View style={styles.tr}>
                   <Text style={styles.vaHeaderGroup}>Un-Corrected</Text>
                   <Text style={styles.vaHeaderGroup}>Corrected</Text>
                 </View>
                 <View style={styles.tr}>
-                  <Text style={styles.vaCell}>Right Eye</Text>
-                  <Text style={styles.vaCell}>Left Eye</Text>
-                  <Text style={styles.vaCell}>Right Eye</Text>
-                  <Text style={styles.vaCell}>Left Eye</Text>
+                  <Text style={styles.vaSubHeaderCell}>Right Eye</Text>
+                  <Text style={styles.vaSubHeaderCell}>Left Eye</Text>
+                  <Text style={styles.vaSubHeaderCell}>Right Eye</Text>
+                  <Text style={styles.vaSubHeaderCell}>Left Eye</Text>
                 </View>
               </View>
             </View>
