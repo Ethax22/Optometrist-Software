@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import { and, inArray, eq, desc } from "drizzle-orm";
 import { renderToBuffer } from "@react-pdf/renderer";
@@ -87,60 +88,32 @@ export async function POST(request: Request) {
     : [];
   const optometristById = new Map(optometrists.map((o) => [o.userId, o]));
 
-  const signatureCache = new Map<string, string | undefined>();
-  async function getSignatureDataUri(storagePath: string | null | undefined): Promise<string | undefined> {
-    if (!storagePath) return undefined;
-    if (signatureCache.has(storagePath)) return signatureCache.get(storagePath);
-    const file = await readSignature(storagePath);
-    const dataUri = file ? `data:${file.mimeType};base64,${file.data.toString("base64")}` : undefined;
-    signatureCache.set(storagePath, dataUri);
-    return dataUri;
-  }
+  // Distinct optometrists only -- cheap to resolve up front so each per-row
+  // PDF render below has no further async work before it, besides its own
+  // rendering.
+  const signatureDataUriByOptometrist = new Map<string, string | undefined>();
+  await Promise.all(
+    optometrists.map(async (optometrist) => {
+      if (!optometrist.signatureStoragePath) return;
+      const file = await readSignature(optometrist.signatureStoragePath);
+      signatureDataUriByOptometrist.set(
+        optometrist.userId,
+        file ? `data:${file.mimeType};base64,${file.data.toString("base64")}` : undefined,
+      );
+    }),
+  );
 
   const zip = new JSZip();
   const usedNames = new Set<string>();
 
+  // Each entry's content is a promise that renders the PDF lazily. JSZip
+  // resolves these one at a time as it streams the zip below, instead of
+  // requiring every PDF to be rendered and held in memory up front -- this
+  // is what lets bytes start flowing to the client (and nginx) immediately,
+  // rather than only after all 200+ PDFs have finished rendering.
   for (const row of sortedRows) {
     const optometrist = optometristById.get(row.optometristId);
-    const signatureDataUri = await getSignatureDataUri(optometrist?.signatureStoragePath);
-
-    const buffer = await renderToBuffer(
-      <PrescriptionDocument
-        includeLogo={false}
-        data={{
-          patientName: row.patientName,
-          patientUid: row.patientUid,
-          patientAge: row.patientAge,
-          patientGender: row.patientGender,
-          consultationDate: row.consultationDate,
-          optometristName: optometrist?.fullName || optometrist?.email || "Optometrist",
-          signatureDataUri,
-          rightSph: row.prescription.rightSph,
-          rightCyl: row.prescription.rightCyl,
-          rightAxis: row.prescription.rightAxis,
-          rightAdd: row.prescription.rightAdd,
-          leftSph: row.prescription.leftSph,
-          leftCyl: row.prescription.leftCyl,
-          leftAxis: row.prescription.leftAxis,
-          leftAdd: row.prescription.leftAdd,
-          distanceUncorrectedRight: row.prescription.distanceUncorrectedRight,
-          distanceUncorrectedLeft: row.prescription.distanceUncorrectedLeft,
-          distanceCorrectedRight: row.prescription.distanceCorrectedRight,
-          distanceCorrectedLeft: row.prescription.distanceCorrectedLeft,
-          nearUncorrectedRight: row.prescription.nearUncorrectedRight,
-          nearUncorrectedLeft: row.prescription.nearUncorrectedLeft,
-          nearCorrectedRight: row.prescription.nearCorrectedRight,
-          nearCorrectedLeft: row.prescription.nearCorrectedLeft,
-          pinholeRight: row.prescription.pinholeRight,
-          pinholeLeft: row.prescription.pinholeLeft,
-          colorBlindnessResult: row.prescription.colorBlindnessResult,
-          colorBlindnessRe: row.prescription.colorBlindnessRe,
-          colorBlindnessLe: row.prescription.colorBlindnessLe,
-          optometristRemarks: row.prescription.optometristRemarks,
-          remarks: row.prescription.remarks,
-        }}
-      />,
-    );
+    const signatureDataUri = signatureDataUriByOptometrist.get(row.optometristId);
 
     const uidPart = row.patientUid ?? row.patientId.slice(0, 8);
     let fileName = `prescription-${uidPart}-${row.consultationDate}-no-logo.pdf`;
@@ -148,10 +121,48 @@ export async function POST(request: Request) {
       fileName = `prescription-${uidPart}-${row.consultationDate}-no-logo-${row.patientId.slice(0, 8)}.pdf`;
     }
     usedNames.add(fileName);
-    zip.file(fileName, buffer);
-  }
 
-  const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    zip.file(
+      fileName,
+      renderToBuffer(
+        <PrescriptionDocument
+          includeLogo={false}
+          data={{
+            patientName: row.patientName,
+            patientUid: row.patientUid,
+            patientAge: row.patientAge,
+            patientGender: row.patientGender,
+            consultationDate: row.consultationDate,
+            optometristName: optometrist?.fullName || optometrist?.email || "Optometrist",
+            signatureDataUri,
+            rightSph: row.prescription.rightSph,
+            rightCyl: row.prescription.rightCyl,
+            rightAxis: row.prescription.rightAxis,
+            rightAdd: row.prescription.rightAdd,
+            leftSph: row.prescription.leftSph,
+            leftCyl: row.prescription.leftCyl,
+            leftAxis: row.prescription.leftAxis,
+            leftAdd: row.prescription.leftAdd,
+            distanceUncorrectedRight: row.prescription.distanceUncorrectedRight,
+            distanceUncorrectedLeft: row.prescription.distanceUncorrectedLeft,
+            distanceCorrectedRight: row.prescription.distanceCorrectedRight,
+            distanceCorrectedLeft: row.prescription.distanceCorrectedLeft,
+            nearUncorrectedRight: row.prescription.nearUncorrectedRight,
+            nearUncorrectedLeft: row.prescription.nearUncorrectedLeft,
+            nearCorrectedRight: row.prescription.nearCorrectedRight,
+            nearCorrectedLeft: row.prescription.nearCorrectedLeft,
+            pinholeRight: row.prescription.pinholeRight,
+            pinholeLeft: row.prescription.pinholeLeft,
+            colorBlindnessResult: row.prescription.colorBlindnessResult,
+            colorBlindnessRe: row.prescription.colorBlindnessRe,
+            colorBlindnessLe: row.prescription.colorBlindnessLe,
+            optometristRemarks: row.prescription.optometristRemarks,
+            remarks: row.prescription.remarks,
+          }}
+        />,
+      ),
+    );
+  }
 
   await logAudit({
     userId: appUser.id,
@@ -161,7 +172,10 @@ export async function POST(request: Request) {
   });
 
   const today = new Date().toISOString().slice(0, 10);
-  return new NextResponse(new Uint8Array(zipBuffer), {
+  const nodeStream = zip.generateNodeStream({ type: "nodebuffer", streamFiles: true });
+  const webStream = Readable.toWeb(nodeStream as Readable) as ReadableStream<Uint8Array>;
+
+  return new NextResponse(webStream, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="prescriptions-bulk-${today}.zip"`,
