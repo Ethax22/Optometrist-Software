@@ -17,6 +17,16 @@ const INK_LUMINANCE = 120;
 /** Padding (px) kept around the ink so strokes are not clipped at the edge. */
 const CROP_PADDING = 4;
 
+/**
+ * A signature only ever renders a couple centimetres wide on a PDF signature
+ * line. Phone photos come in at thousands of pixels wide, and losslessly
+ * PNG-encoding that (with an alpha channel) produces multi-megabyte files --
+ * embedded in every single prescription PDF that optometrist signs, which is
+ * what bloated the bulk export zip. Cap the stored width well above anything
+ * a signature line needs.
+ */
+const MAX_WIDTH = 640;
+
 export type ProcessedSignature = { data: Buffer; mimeType: "image/png" };
 
 export async function makeSignatureTransparent(input: Buffer): Promise<ProcessedSignature> {
@@ -68,21 +78,27 @@ export async function makeSignatureTransparent(input: Buffer): Promise<Processed
   // Nothing survived the threshold (a blank or very light scan): keep the
   // full frame rather than failing the upload.
   if (maxX < minX || maxY < minY) {
-    return { data: await transparent.png().toBuffer(), mimeType: "image/png" };
+    const full = await transparent
+      .resize({ width: MAX_WIDTH, withoutEnlargement: true })
+      .png()
+      .toBuffer();
+    return { data: full, mimeType: "image/png" };
   }
 
   const left = Math.max(0, minX - CROP_PADDING);
   const top = Math.max(0, minY - CROP_PADDING);
 
-  const cropped = await transparent
-    .extract({
-      left,
-      top,
-      width: Math.min(width - left, maxX - minX + 1 + CROP_PADDING * 2),
-      height: Math.min(height - top, maxY - minY + 1 + CROP_PADDING * 2),
-    })
+  const cropped = transparent.extract({
+    left,
+    top,
+    width: Math.min(width - left, maxX - minX + 1 + CROP_PADDING * 2),
+    height: Math.min(height - top, maxY - minY + 1 + CROP_PADDING * 2),
+  });
+
+  const result = await cropped
+    .resize({ width: MAX_WIDTH, withoutEnlargement: true })
     .png()
     .toBuffer();
 
-  return { data: cropped, mimeType: "image/png" };
+  return { data: result, mimeType: "image/png" };
 }
