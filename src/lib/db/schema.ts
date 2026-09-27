@@ -207,6 +207,60 @@ export const prescriptions = pgTable("prescriptions", {
   ),
 ]);
 
+export const invoices = pgTable(
+  "invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceNumber: text("invoice_number").notNull(),
+    invoiceDate: date("invoice_date").notNull(),
+    paymentTerms: text("payment_terms"),
+    billToName: text("bill_to_name").notNull(),
+    billToAddress: text("bill_to_address"),
+    shipToName: text("ship_to_name"),
+    shipToAddress: text("ship_to_address"),
+    placeOfSupply: text("place_of_supply"),
+    otherReference: text("other_reference"),
+    subject: text("subject"),
+    totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    updatedBy: uuid("updated_by")
+      .notNull()
+      .references(() => users.id),
+  },
+  (table) => [
+    // Case-insensitive uniqueness scoped per optometrist, same pattern as
+    // patients.uidEmpId -- different optometrists may reuse the same number.
+    uniqueIndex("invoices_invoice_number_unique_idx").on(
+      sql`lower(${table.invoiceNumber})`,
+      table.createdBy,
+    ),
+    index("invoices_created_by_idx").on(table.createdBy),
+    index("invoices_invoice_date_idx").on(table.invoiceDate),
+  ],
+);
+
+export const invoiceItems = pgTable(
+  "invoice_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    itemName: text("item_name").notNull(),
+    description: text("description").notNull(),
+    quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
+    unit: text("unit").notNull().default("Nos"),
+    rate: numeric("rate", { precision: 12, scale: 2 }).notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [index("invoice_items_invoice_id_idx").on(table.invoiceId)],
+);
+
 export const auditLogs = pgTable(
   "audit_logs",
   {

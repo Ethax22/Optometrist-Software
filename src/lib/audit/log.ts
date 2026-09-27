@@ -23,14 +23,18 @@ export type AuditAction =
   | "prescription_saved"
   | "prescription_pdf_downloaded"
   | "prescriptions_csv_exported"
-  | "prescriptions_bulk_pdf_downloaded";
+  | "prescriptions_bulk_pdf_downloaded"
+  | "invoice_created"
+  | "invoice_deleted"
+  | "invoice_pdf_downloaded";
 
 export type AuditEntityType =
   | "user"
   | "optometrist_profile"
   | "patient"
   | "consultation"
-  | "prescription";
+  | "prescription"
+  | "invoice";
 
 /**
  * Records an audit event. Never throws -- a logging failure must not break

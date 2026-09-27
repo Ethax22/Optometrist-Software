@@ -1,0 +1,1 @@
+ALTER TABLE "optometrist_profiles" DROP COLUMN "msme_udyam_number";

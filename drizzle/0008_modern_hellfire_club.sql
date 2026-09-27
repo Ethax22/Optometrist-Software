@@ -1,0 +1,1 @@
+ALTER TABLE "optometrist_profiles" ADD COLUMN "msme_udyam_number" text;
